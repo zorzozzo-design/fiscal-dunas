@@ -1,4 +1,4 @@
-// Notificação, Termo de Apreensão e Fiel Depositário, Auto de Constatação e Relatório Fotográfico, no layout dos modelos do Comando Ambiental
+// Notificação, Termo de Apreensão e Fiel Depositário, Auto de Constatação e Relatório Fotográfico, no layout dos modelos do Comando de Polícia Ambiental
 // da Brigada Militar (mesmo do Fiscal Pesca). Gera HTML para impressão (ou PDF pelo "Imprimir" do navegador).
 (() => {
 
@@ -22,7 +22,7 @@ const coords = ab => ab.gps ? `Latitude ${num(ab.gps.lat.toFixed(5))}, longitude
 const cabecalho = (cfg, titulo) => `
   <table class="doc-cab"><tr>
     <td class="doc-logo">${cfg.logos?.brasao ? `<img src="${esc(cfg.logos.brasao)}" alt="">` : ''}</td>
-    <td class="doc-orgao">ESTADO DO RIO GRANDE DO SUL<br>SECRETARIA DE SEGURANÇA PÚBLICA<br>BRIGADA MILITAR<br>COMANDO AMBIENTAL DA BRIGADA MILITAR</td>
+    <td class="doc-orgao">ESTADO DO RIO GRANDE DO SUL<br>SECRETARIA DE SEGURANÇA PÚBLICA<br>BRIGADA MILITAR<br>COMANDO DE POLÍCIA AMBIENTAL DA BRIGADA MILITAR</td>
     <td class="doc-logo">${cfg.logos?.comando ? `<img src="${esc(cfg.logos.comando)}" alt="">` : ''}</td>
   </tr></table>
   <div class="doc-titulo">${titulo}</div>`;

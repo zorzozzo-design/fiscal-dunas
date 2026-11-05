@@ -622,10 +622,10 @@ function telaDados() {
     <details class="card card-dobra"${ag.nome ? '' : ' open'}><summary><h2>Agente</h2></summary>
       <div class="grade"><div><label for="g-nome">Nome</label><input id="g-nome" value="${esc(ag.nome)}"></div>
         <div><label for="g-id">Id funcional</label><input id="g-id" value="${esc(ag.idFunc)}"></div>
-        <div><label for="g-fr">Fração</label><input id="g-fr" value="${esc(ag.fracao)}" placeholder="4º Pel/1º BABM"></div></div>
+        <div><label for="g-fr">Fração</label><input id="g-fr" value="${esc(ag.fracao)}" placeholder="4º Pel/2ª Cia/1º BPAmb"></div></div>
       <label for="g-comp">Endereço de comparecimento (notificação)</label><input id="g-comp" value="${esc(db.cfg.comparecimento)}">
       <div class="grade"><div><label for="l-bras">Brasão do RS</label><input id="l-bras" type="file" accept="image/*"><div id="v-bras"></div></div>
-        <div><label for="l-cmd">Logo do Comando Ambiental</label><input id="l-cmd" type="file" accept="image/*"><div id="v-cmd"></div></div></div>
+        <div><label for="l-cmd">Logo do Comando de Polícia Ambiental</label><input id="l-cmd" type="file" accept="image/*"><div id="v-cmd"></div></div></div>
       <p><button id="b-ag" type="button">Salvar</button></p></details>
     <details class="card card-dobra"><summary><h2>Convênios de trânsito</h2></summary><p class="muted peq">Todo o RS tem convênio de trânsito com a BM (CTB, art. 23, III). Marque só os municípios com convênio vencido ou suspenso. Nesses municípios, o app não sugere AIT nem remoção.</p>
       <div class="chips">${MUNICIPIOS.map(m => `<label class="chk chip-chk"><input type="checkbox" data-conv="${esc(m)}"${conv.has(m) ? ' checked' : ''}> ${esc(m)}</label>`).join('')}</div>

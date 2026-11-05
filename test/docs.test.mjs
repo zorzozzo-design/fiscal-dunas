@@ -95,3 +95,7 @@ test('documentos levam o fato, nunca a orientação ao agente', () => {
   const t = historicoBO(ab, r) + motivoSugerido(motivos);
   assert.ok(!/fotografe|perícia|Termo de apreensão sem valor/i.test(t));
 });
+
+test('cabeçalho com o nome atual do Comando (Orientação 002/2025)', () => {
+  assert.ok(notificacao(ab, cfg).includes('COMANDO DE POLÍCIA AMBIENTAL DA BRIGADA MILITAR'));
+});
