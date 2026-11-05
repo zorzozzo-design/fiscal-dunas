@@ -104,8 +104,8 @@ function checar(ab, ctx = {}) {
   const dobro = emUc ? ' (em dobro: UC, art. 108)' : '';
 
   // D01 e D02: a matriz de trânsito administrativa só vale em via e com convênio.
-  if (c.via && !ctx.convenio) aviso('D02', 'amarelo', 'Município marcado sem convênio de trânsito vigente: registre e acione o órgão de trânsito. Não lavre AIT.', 'CTB, art. 23, III');
-  if (!c.via) aviso('D01', 'info', 'Fora de via: não há infração administrativa do CTB. Valem a matriz ambiental e os crimes que não exigem via pública.', 'CTB, arts. 1º e 2º');
+  if (c.via && !ctx.convenio) aviso('D02', 'amarelo', 'Este município está sem convênio de trânsito. Não lavre AIT. Registre o fato e chame o órgão de trânsito.', 'CTB, art. 23, III');
+  if (!c.via) aviso('D01', 'info', 'Fora de via, o CTB não tem infração administrativa. Use a matriz ambiental e os crimes que não exigem via pública.', 'CTB, arts. 1º e 2º');
 
   // D03: duna frontal, campo de dunas móveis, banhado ou capão de mata (Zona Costeira).
   if (c.zonaCosteira && d.sulcos)
@@ -119,28 +119,28 @@ function checar(ab, ctx = {}) {
   if (dunaFrontal || (comDano && ab.lugar?.fixadora))
     add('D05', 'vermelho', dunaFrontal ? `Veículo sobre duna frontal, na faixa da preamar, danificando a vegetação fixadora${area}.` : `Vegetação fixadora de dunas danificada${area}.`,
       'Lei 12.651/2012, art. 4º, VI', `Infração: ${DEC}, art. 56 (250 a 2.500 UPF por ha ou fração)${dobro}`, 'L9605-50',
-      dunaFrontal ? 'Dano presumido no painel: descreva a vegetação esmagada e fotografe o rastro, a materialidade precisa estar no histórico.' : 'Descreva a vegetação, fotografe e peça perícia.');
+      dunaFrontal ? 'O painel presume o dano. Descreva no histórico a vegetação esmagada. Fotografe o rastro.' : 'Descreva a vegetação. Fotografe o dano. Peça perícia.');
   else if (comDano && ehApp)
     add(c.app[0][0], 'vermelho', `Vegetação nativa danificada em APP (${c.app.map(a => a[1].toLowerCase()).join('; ')}).`,
       c.app.map(a => a[2]).join('; '), `Infração: ${DEC}, art. 56 (250 a 2.500 UPF por ha ou fração)${dobro}. Crime a conferir: art. 48 ou art. 38`, '',
-      ap300 ? 'APP dos 300 m: precedente da 2ª Turma do STJ (não vinculante). Registre a medição e a vegetação de restinga.' : '');
+      ap300 ? 'A APP dos 300 m vem de um precedente da 2ª Turma do STJ, não vinculante. Registre a medição e a vegetação de restinga.' : '');
   if (ap300 && ab.lugar.distMetodo === 'Estimativa')
-    aviso('D04', 'amarelo', 'Distância da preamar estimada: meça (GPS com camada, trena ou imagem) para sustentar a APP dos 300 m.', 'Res. CONAMA 303/2002, art. 3º, IX, a');
+    aviso('D04', 'amarelo', 'A distância da preamar é uma estimativa. Meça com GPS e camada, trena ou imagem. Sem medição, a APP dos 300 m fica fraca.', 'Res. CONAMA 303/2002, art. 3º, IX, a');
   if (d.reiterada && (ehApp || c.zonaCosteira))
     add('D21', 'amarelo', 'Trilha usada de forma reiterada, mantendo o solo nu, impedindo a regeneração natural.',
-      'Lei 9.605/98, art. 48', `Infração: ${DEC}, art. 65 (250 UPF por ha ou fração)${dobro}`, 'L9605-48', 'Registre datas e imagens sucessivas do ponto: o TJRS exige prova pericial do impedimento.');
+      'Lei 9.605/98, art. 48', `Infração: ${DEC}, art. 65 (250 UPF por ha ou fração)${dobro}`, 'L9605-48', 'Fotografe o ponto em datas diferentes e registre as datas. O TJRS exige prova pericial do impedimento.');
   if (comDano && ['Arbustiva', 'Arbórea'].includes(d.vegetacao) && ['Médio', 'Avançado'].includes(d.estagio))
     add('D22', 'vermelho', `Restinga ${d.vegetacao.toLowerCase()} em estágio ${d.estagio.toLowerCase()} de regeneração (Mata Atlântica) danificada.`,
-      'Lei 11.428/2006', `Infração: ${DEC}, art. 58 (300 UPF/ha + 50 UPF/ha por ser Mata Atlântica)${dobro}`, 'L9605-38A', 'Exige laudo de estágio sucessional.');
+      'Lei 11.428/2006', `Infração: ${DEC}, art. 58 (300 UPF/ha + 50 UPF/ha por ser Mata Atlântica)${dobro}`, 'L9605-38A', 'Peça laudo do estágio de regeneração.');
 
   // D07: Unidade de Conservação.
   if (emUc) {
     add('D07', comDano ? 'vermelho' : 'amarelo', `Tráfego de veículo dentro de Unidade de Conservação ${c.uc}${ab.lugar.ucNome ? ` (${ab.lugar.ucNome})` : ''}${comDano ? ', com dano' : ''}.`,
-      `${DEC}, arts. 106 e 108`, `Infração: ${DEC}, art. 106 (25 a 500 UPF)`, comDano ? 'L9605-40' : '', 'Multas em dobro.');
-    if (c.uc === 'federal') aviso('D07', 'amarelo', 'UC federal: competência da Justiça Federal e do ICMBio. Comunique o ICMBio.', 'CF/88, art. 109, IV');
+      `${DEC}, arts. 106 e 108`, `Infração: ${DEC}, art. 106 (25 a 500 UPF)`, comDano ? 'L9605-40' : '', 'Em UC, as multas dobram.');
+    if (c.uc === 'federal') aviso('D07', 'amarelo', 'A UC é federal. O caso é da Justiça Federal e do ICMBio. Comunique o ICMBio.', 'CF/88, art. 109, IV');
   }
   // D08: bem da União.
-  if (c.marinha) aviso('D08', 'amarelo', 'Possível terreno de marinha ou lagoa ligada ao mar: competência federal provável. Comunique PF ou MPF, além da DP.', 'STJ, RHC 50.692/SC; AREsp 2.313.729/SP');
+  if (c.marinha) aviso('D08', 'amarelo', 'O local pode ser terreno de marinha ou lagoa ligada ao mar. Então o caso pode ser federal. Comunique a PF ou o MPF, além da DP.', 'STJ, RHC 50.692/SC; AREsp 2.313.729/SP');
 
   // Extração de areia.
   if (d.areia) {
@@ -157,18 +157,18 @@ function checar(ab, ctx = {}) {
       `Infração: ${DEC}, art. 38, §3º (${d.ameacada ? 250 : 25} UPF por indivíduo)${dobro}`, 'L9605-29');
 
   if (k.fuga) add('D24', 'vermelho', 'Fuga, desobediência ou embaraço à fiscalização.', 'Lei 9.605/98, art. 69', `Infração: ${DEC}, art. 93 (25 a 5.000 UPF)`, 'L9605-69');
-  if (k.evento) add('D25', 'amarelo', 'Passeio ou evento organizado na área.', 'Lei 9.605/98, art. 2º; Lei 15.434/2020, art. 49', '', '', 'O organizador responde como coautor; em UC, evento exige autorização do gestor.');
+  if (k.evento) add('D25', 'amarelo', 'Passeio ou evento organizado na área.', 'Lei 9.605/98, art. 2º; Lei 15.434/2020, art. 49', '', '', 'O organizador responde como coautor. Em UC, o evento precisa de autorização do gestor.');
 
   // D16: embriaguez vale em qualquer local.
-  if (k.embriaguez) add('D16', 'vermelho', 'Condutor com sinais de embriaguez.', 'CTB, art. 306', c.via ? 'Infração: CTB, art. 165 (gravíssima x10, suspensão)' : '', 'CTB-306', 'Crime em qualquer local: condução à DP.');
+  if (k.embriaguez) add('D16', 'vermelho', 'Condutor com sinais de embriaguez.', 'CTB, art. 306', c.via ? 'Infração: CTB, art. 165 (gravíssima x10, suspensão)' : '', 'CTB-306', 'É crime em qualquer local. Conduza à DP.');
   if (k.recusaTeste && c.via) add('D16', 'vermelho', 'Recusa ao teste de alcoolemia.', 'CTB, art. 165-A', 'Infração: gravíssima x10, suspensão');
 
   // D17: menor conduzindo e direção sem habilitação.
   const anos = idade(cond.nascimento, ab.data);
   const semCnh = ['Sem CNH', 'Suspensa', 'Cassada'].includes(cond.cnhSit);
-  if (anos != null && anos < 18) add('D17', 'vermelho', `Condutor com ${anos} anos.`, 'Lei 8.069/90', '', '', 'Ato infracional (ECA): acione o responsável.');
+  if (anos != null && anos < 18) add('D17', 'vermelho', `Condutor com ${anos} anos.`, 'Lei 8.069/90', '', '', 'É ato infracional (ECA). Chame o responsável.');
   if ((semCnh || (anos != null && anos < 18)) && ab.proprietario?.entregouDirecao)
-    add('D17', 'vermelho', 'Direção do veículo entregue a pessoa não habilitada.', 'CTB, art. 310; STJ, Súmula 575', '', 'CTB-310', 'Vale em qualquer local, sem prova de perigo.');
+    add('D17', 'vermelho', 'Direção do veículo entregue a pessoa não habilitada.', 'CTB, art. 310; STJ, Súmula 575', '', 'CTB-310', 'Vale em qualquer local. Não exige prova de perigo.');
   if (semCnh && c.via && !(anos != null && anos < 18)) {
     if (k.perigoDano) add('D26', 'vermelho', 'Direção sem habilitação gerando perigo de dano.', 'CTB, art. 309', '', 'CTB-309');
     add('D26', 'vermelho', cond.cnhSit === 'Sem CNH' ? 'Condutor sem CNH.' : `CNH ${cond.cnhSit.toLowerCase()}.`,
@@ -181,7 +181,7 @@ function checar(ab, ctx = {}) {
   if (v.semPlaca || ['Sem registro', 'Não licenciado'].includes(v.registro)) {
     if (c.via) add('D18', 'vermelho', v.semPlaca ? 'Veículo sem placa em via.' : `Veículo ${v.registro.toLowerCase()} em via.`,
       v.semPlaca ? 'CTB, art. 230, IV' : 'CTB, art. 230, V', 'Infração: gravíssima; remoção do veículo');
-    else aviso('D18', 'info', `Veículo ${v.semPlaca ? 'sem placa' : v.registro.toLowerCase()} fora de via: só registre${TIPOS_SEM_PLACA.has(v.tipo) ? ' (Res. CONTRAN 1.023/2026 não autoriza rodar em duna)' : ''}.`, 'CTB, art. 1º');
+    else aviso('D18', 'info', `Veículo ${v.semPlaca ? 'sem placa' : v.registro.toLowerCase()} fora de via. Só registre o fato.${TIPOS_SEM_PLACA.has(v.tipo) ? ' A Res. CONTRAN 1.023/2026 não autoriza este veículo em duna.' : ''}`, 'CTB, art. 1º');
   }
   if (c.via) {
     if (k.semCapacete) add('D27', 'vermelho', 'Sem capacete.', 'CTB, art. 244, I', 'Infração: gravíssima, suspensão; retenção');
@@ -191,14 +191,14 @@ function checar(ab, ctx = {}) {
   if (k.velocidadePessoas) add('D27', 'vermelho', 'Velocidade incompatível onde há concentração de pessoas.', 'CTB, art. 311', '', 'CTB-311');
 
   // D11 a D13: histórico do veículo e da pessoa.
-  if (ctx.historico) aviso('D11', 'amarelo', `${ctx.historico} abordage${ctx.historico > 1 ? 'ns anteriores' : 'm anterior'} do mesmo veículo ou pessoa: uso reiterado.`, `${DEC}, art. 24, III`);
+  if (ctx.historico) aviso('D11', 'amarelo', `${ctx.historico} abordage${ctx.historico > 1 ? 'ns anteriores' : 'm anterior'} do mesmo veículo ou pessoa. Isso indica uso reiterado.`, `${DEC}, art. 24, III`);
   if (ab.apreensao?.fiel?.autuado && ctx.historico)
-    aviso('D13', 'amarelo', 'Autuado com histórico nomeado fiel depositário: risco de nova infração.', `${DEC}, art. 141; STJ, Tema 1043`);
+    aviso('D13', 'amarelo', 'O fiel depositário é um autuado com histórico. Há risco de nova infração. Nomeie outro depositário.', `${DEC}, art. 141; STJ, Tema 1043`);
   if (ab.apreensao && !(+ab.apreensao.valor > 0))
-    aviso('D14', 'amarelo', 'Termo de apreensão sem valor de avaliação do bem.', `${DEC}, art. 135, §1º`);
+    aviso('D14', 'amarelo', 'O Termo de Apreensão está sem o valor de avaliação. Informe o valor.', `${DEC}, art. 135, §1º`);
 
   // D20: nada irregular.
-  if (!out.some(m => m.nivel === 'vermelho')) aviso('D20', 'info', 'Sem irregularidade confirmada: registre a orientação e, se for o caso, notifique.', 'Lei 15.434/2020, art. 13; CF/88, art. 225');
+  if (!out.some(m => m.nivel === 'vermelho')) aviso('D20', 'info', 'Nenhuma irregularidade confirmada. Registre a orientação. Se necessário, notifique.', 'Lei 15.434/2020, art. 13; CF/88, art. 225');
   return out;
 }
 
@@ -226,15 +226,15 @@ function basesApreensao(ab, motivos, ctx = {}) {
 
 // Resumo para o Guia (consulta offline).
 const GUIA = [
-  ['Primeiro o local', 'Praia aberta ao público, rua ou estrada = via (CTB vale). Duna fechada, Tuia, área privada = fora de via: só a matriz ambiental e os crimes de trânsito que não exigem via (306, 310, 311).'],
-  ['APP', 'Vegetação fixadora de duna (em qualquer distância); restinga, incluídas as dunas, a até 300 m da preamar (Res. CONAMA 303, art. 3º, IX, a; STJ, REsp 1.827.303/SC, 2ª Turma, não vinculante); faixa de lagoa natural: 100 m rural (50 m até 20 ha), 30 m urbana; banhado (Lei 15.434, art. 144). A Res. 303 (art. 3º, XI) também faz da duna APP em qualquer lugar; o STJ ainda não tratou desse inciso. A Res. 302 vale só para reservatório artificial (açude, barragem).'],
-  ['Medir a preamar', 'A APP dos 300 m depende da distância. Registre como mediu (GPS com camada, trena ou imagem) e fotografe a linha de preamar usada como referência. Estimativa não sustenta a APP.'],
-  ['Caso típico', 'Veículo esmagando vegetação fixadora: art. 50 da Lei 9.605 (TC) + Dec. 55.374, art. 56 no Auto de Constatação. Prova: fotos, área em m², GPS e descrição da vegetação.'],
-  ['Rito', 'Até 2 anos de pena máxima somada: TC. Acima (ex.: arts. 38-A, 40, 63, 69, CTB 306): condução à DP.'],
-  ['Recolher o veículo', 'Penal: instrumento do crime em flagrante. Administrativa: só com posse ilícita, alteração ou uso reiterado. Trânsito: só em via e com convênio.'],
-  ['Fiel depositário', 'Não é direito do autuado (STJ, Tema 1043). Reincidente não fica como depositário. O termo exige valor de avaliação.'],
-  ['Competência', 'UC federal ou terreno de marinha: Justiça Federal. UC estadual ou municipal: em regra, estadual.'],
-  ['Sem irregularidade', 'Orientação registrada (Lei 15.434, art. 13). Ela vira prova de uso reiterado na próxima vez.'],
+  ['Primeiro o local', 'Classifique o local primeiro. Praia aberta ao público, rua e estrada são via, e nelas o CTB vale. Duna fechada, Tuia e área privada ficam fora de via. Fora de via, use a matriz ambiental e os crimes de trânsito que não exigem via (CTB, arts. 306, 310 e 311).'],
+  ['APP', 'A vegetação fixadora de duna é APP em qualquer distância (Lei 12.651, art. 4º, VI). A restinga até 300 m da preamar também é APP, incluídas as dunas (Res. CONAMA 303, art. 3º, IX, a). Esta regra vem de um precedente da 2ª Turma do STJ (REsp 1.827.303/SC), não vinculante. A faixa de lagoa natural é APP. Na zona rural, a faixa é de 100 m, ou 50 m em lagoa de até 20 ha. Na zona urbana, é de 30 m. O banhado também é protegido (Lei 15.434, art. 144). A Res. 303 (art. 3º, XI) faz da duna APP em qualquer lugar. O STJ ainda não decidiu sobre este inciso. A Res. 302 vale só para reservatório artificial, como açude ou barragem.'],
+  ['Medir a preamar', 'A APP dos 300 m depende da distância. Registre como mediu: GPS com camada, trena ou imagem. Fotografe a linha de preamar que usou como referência. Uma estimativa não sustenta a APP.'],
+  ['Caso típico', 'O veículo esmaga a vegetação fixadora. O crime é o art. 50 da Lei 9.605, com rito de TC. No Auto de Constatação, use o Dec. 55.374, art. 56. Para a prova, registre fotos, área em m², GPS e a descrição da vegetação.'],
+  ['Rito', 'Some as penas máximas dos crimes. Até 2 anos, o rito é TC. Acima de 2 anos, conduza à DP. Exemplos acima de 2 anos: arts. 38-A, 40, 63 e 69 da Lei 9.605 e art. 306 do CTB.'],
+  ['Recolher o veículo', 'Há três bases para recolher o veículo. Penal: o veículo é instrumento do crime em flagrante. Administrativa: exige posse ilícita, alteração ou uso reiterado. Trânsito: só em via e com convênio.'],
+  ['Fiel depositário', 'O autuado não tem direito de ser fiel depositário (STJ, Tema 1043). Não nomeie um reincidente como depositário. O termo exige o valor de avaliação.'],
+  ['Competência', 'UC federal ou terreno de marinha: o caso é da Justiça Federal. UC estadual ou municipal: em regra, o caso é da Justiça Estadual.'],
+  ['Sem irregularidade', 'Registre a orientação (Lei 15.434, art. 13). Na próxima abordagem, a orientação registrada prova o uso reiterado.'],
 ];
 
 globalThis.Normas = { CRIMES, FEICOES, METODOS_PREAMAR, TIPOS_SEM_PLACA, CORREDOR_LENCOIS, noPoligono, areasDoPonto, faixaLagoa, classificar, feriado, agravantes, idade, checar, rito, crimesDe, basesApreensao, GUIA };

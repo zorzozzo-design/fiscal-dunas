@@ -110,7 +110,7 @@ const salvarCom = async texto => { await ocupado(salvar, 'Salvando'); aviso(text
 async function telaSenha() {
   const meta = await tx('kv', 'readonly', s => s.get('meta'));
   app.innerHTML = `<div class="card centro"><h1>${meta ? 'Desbloquear' : 'Criar senha'}</h1>
-    <p class="muted peq">${meta ? 'Os dados ficam criptografados neste aparelho.' : 'Os dados ficam só neste aparelho, criptografados com esta senha. Sem ela não há como recuperar.'}</p>
+    <p class="muted peq">${meta ? 'Os dados ficam criptografados neste aparelho.' : 'Os dados ficam só neste aparelho. A senha criptografa os dados. Sem a senha, não é possível recuperar os dados.'}</p>
     <form id="f"><label for="s1">Senha</label><input id="s1" type="password" autocomplete="current-password" required minlength="6">
       ${meta ? '' : '<label for="s2">Repita a senha</label><input id="s2" type="password" required minlength="6">'}
       <p><button>${meta ? 'Entrar' : 'Criar'}</button></p><p id="m" class="msg erro"></p></form>
@@ -291,7 +291,7 @@ function telaAbordagem(id) {
       <datalist id="muns">${MUNICIPIOS.map(m => `<option value="${esc(m)}">`).join('')}</datalist></div>
 
     <details class="card card-dobra" open><summary><h2>1. Local</h2></summary>
-      ${chk('lugar.via', '<b>Via:</b> praia aberta à circulação, rua, estrada ou caminho aberto ao público')}
+      ${chk('lugar.via', '<b>Via:</b> praia, rua, estrada ou caminho aberto ao público')}
       <label>Ambiente</label><div class="chips">${FEICOES.map(f => `<label class="chk chip-chk"><input type="checkbox" data-arr="lugar.feicoes" value="${esc(f)}"> ${esc(f)}</label>`).join('')}</div>
       ${chk('lugar.fixadora', 'A vegetação atingida <b>fixa duna</b>')}
       <div class="grade">${nume('lugar.distPreamarM', 'Distância da preamar máxima (m)')}${sel('lugar.distMetodo', 'Como foi medida', METODOS_PREAMAR)}${nume('lugar.lagoa.distM', 'Distância da lagoa (m)')}
@@ -301,12 +301,12 @@ function telaAbordagem(id) {
         <div data-se="lugar.uc">${txt('lugar.ucNome', 'Nome da UC')}</div></div>
       ${chk('lugar.amortecimento', 'Zona de amortecimento de UC')}
       ${chk('lugar.marinha', 'Até 33 m da preamar de 1831 (terreno de marinha) ou lagoa ligada ao mar')}
-      ${chk('lugar.privada', 'Área privada (não afasta a proteção ambiental)')}</details>
+      ${chk('lugar.privada', 'Área privada (a proteção ambiental continua)')}</details>
 
     <details class="card card-dobra" open><summary><h2>2. Veículo</h2></summary><div class="grade">${sel('veiculo.tipo', 'Tipo', TIPOS_VEICULO)}${txt('veiculo.placa', 'Placa', ' data-t="maiusc" autocapitalize="characters"')}
       ${txt('veiculo.chassi', 'Chassi', ' data-t="maiusc" autocapitalize="characters"')}${txt('veiculo.marca', 'Marca')}${txt('veiculo.modelo', 'Modelo')}
       ${txt('veiculo.cor', 'Cor')}${txt('veiculo.ano', 'Ano', ' inputmode="numeric"')}${sel('veiculo.registro', 'Registro e licenciamento', REGISTROS)}</div>
-      ${chk('veiculo.semPlaca', 'Sem placa')}${chk('veiculo.alterado', 'Alterado para a prática (ex.: preparo para dunas)')}${chk('veiculo.posseIlicita', 'Posse ilícita (furto, roubo, adulteração)')}
+      ${chk('veiculo.semPlaca', 'Sem placa')}${chk('veiculo.alterado', 'Alterado para a prática ilícita (ex.: preparo para duna)')}${chk('veiculo.posseIlicita', 'Posse ilícita (furto, roubo, adulteração)')}
       <div id="hist"></div></details>
 
     <details class="card card-dobra" open><summary><h2>3. Condutor</h2></summary>${pessoaCampos('condutor')}
@@ -324,11 +324,11 @@ function telaAbordagem(id) {
       <h2 class="sec-tit">Fotos</h2><div id="fotos" class="fotos"></div>
       <div class="linha"><label class="btn sec" for="f-cam">Tirar foto</label><input id="f-cam" type="file" accept="image/*" capture="environment" hidden>
         <label class="btn sec" for="f-gal">Da galeria</label><input id="f-gal" type="file" accept="image/*" multiple hidden></div>
-      <p class="muted peq">Hora e coordenadas vêm do arquivo da foto. Foto tirada pelo app sem GPS no arquivo recebe o GPS do aparelho; foto da galeria sem GPS fica sem coordenadas.</p></details>
+      <p class="muted peq">Hora e coordenadas vêm do arquivo da foto. Se o arquivo não tem GPS, a foto tirada pelo app recebe o GPS do aparelho. A foto da galeria sem GPS fica sem coordenadas.</p></details>
 
     <details class="card card-dobra" open><summary><h2>5. Condutas</h2></summary>
       ${chk('condutas.embriaguez', 'Sinais de embriaguez')}${chk('condutas.recusaTeste', 'Recusa ao teste de alcoolemia')}
-      ${chk('condutas.perigoDano', 'Direção gerando perigo de dano')}${chk('condutas.velocidadePessoas', 'Velocidade incompatível perto de pessoas')}
+      ${chk('condutas.perigoDano', 'Direção com perigo de dano')}${chk('condutas.velocidadePessoas', 'Velocidade incompatível perto de pessoas')}
       ${chk('condutas.manobra', 'Zerinho, cavalo de pau ou arrancada')}${chk('condutas.racha', 'Racha ou disputa')}${chk('condutas.semCapacete', 'Sem capacete')}
       ${chk('condutas.fuga', 'Fuga, desobediência ou embaraço à fiscalização')}${chk('condutas.evento', 'Passeio ou evento organizado')}
       <div class="grade">${txt('reincidencia', 'Nº de auto anterior confirmado (reincidência)')}</div></details>
@@ -351,13 +351,13 @@ function telaAbordagem(id) {
     <details class="card card-dobra" open><summary><h2>7. Fatos e documentos</h2></summary>
       <label>Descrição dos fatos (histórico do BO e do Auto de Constatação)</label><textarea data-k="fatos" rows="5"></textarea>
       <p><button class="sec" id="b-fatos" type="button">Gerar texto pelo enquadramento</button></p>
-      <div class="grade">${txt('atenuantes', 'Atenuantes')}</div>${chk('recusaAssinatura', 'O autuado recusou-se a assinar')}
+      <div class="grade">${txt('atenuantes', 'Atenuantes')}</div>${chk('recusaAssinatura', 'O autuado não quis assinar')}
       <label>Observações</label><textarea data-k="obs" rows="2"></textarea>
       <div class="linha" style="margin-top:10px"><button class="sec" type="button" data-doc="notificacao">Notificação</button>
         <button class="sec" type="button" data-doc="termo">Termo de apreensão</button><button class="sec" type="button" data-doc="auto">Auto de Constatação</button>
         <button class="sec" type="button" data-doc="fotos">Relatório fotográfico</button>
         <button class="sec" type="button" id="b-copiar">Copiar histórico</button></div>
-      <p class="muted peq">No celular, "Imprimir" permite salvar como PDF. Preencha antes o agente e os logos em Dados.</p>
+      <p class="muted peq">Para salvar em PDF, toque em "Imprimir". Antes, preencha o agente e os logos em Dados.</p>
       ${ex ? '<details><summary>Apagar abordagem</summary><p><button type="button" id="b-apagar" class="perigo">Apagar esta abordagem</button></p></details>' : ''}</details>
     <div class="barra-ab"><button type="button" id="ba-cor" class="ba-cor"></button><span id="m-ab" class="msg peq"></span><button id="b-salvar" type="button">Salvar</button></div></form>`;
   document.body.classList.add('com-barra');
@@ -387,7 +387,7 @@ function telaAbordagem(id) {
     $('#enq').innerHTML = `<div class="card sem sem-${r.cor}" id="enq-card"><div class="sem-cor">${COR_TXT[r.cor]}</div>
       <ul>${r.motivos.map(m => `<li class="m-${m.nivel}"><b>${m.regra}</b> ${esc(m.texto)}${m.dica ? ` <i>${esc(m.dica)}</i>` : ''}<div class="sem-norma">${esc(m.norma)}${m.enquadramento ? ' · ' + esc(m.enquadramento) : ''}${m.crime ? ' · Crime: ' + esc(CRIMES[m.crime][0]) : ''}</div></li>`).join('')}</ul>
       ${r.rito.rito ? `<p><b>Rito: ${r.rito.rito === 'TC' ? 'Termo Circunstanciado' : 'condução à DP'}</b> (pena máxima somada: ${r.rito.meses} meses)</p>` : ''}
-      ${r.rito.seConfirmar ? `<p class="peq">Se os itens "conferir" forem confirmados: ${r.rito.seConfirmar === 'TC' ? 'TC' : 'condução à DP'}.</p>` : ''}
+      ${r.rito.seConfirmar ? `<p class="peq">Com os itens "Conferir" confirmados, o rito é: ${r.rito.seConfirmar === 'TC' ? 'TC' : 'condução à DP'}.</p>` : ''}
       ${r.agravantes.length ? `<p class="peq"><b>Agravantes:</b> ${esc(r.agravantes.join('; '))}</p>` : ''}
       ${r.pend.length ? `<p class="peq"><b>Pendências:</b> ${esc(r.pend.map(p => p.texto).join(' '))}</p>` : ''}</div>`;
     $('#hist').innerHTML = r.hist.length ? `<p class="msg erro peq">Já abordado ${r.hist.length} vez(es): ${r.hist.map(h => `<a href="#/ab/${h.id}">${fmtData(h.data)}</a>`).join(', ')}</p>` : '';
@@ -525,7 +525,7 @@ function telaAbordagem(id) {
   // Saiu do app no meio da abordagem: grava antes do bloqueio por tempo, para nada se perder.
   salvarPendente = () => alterado && gravar();
   // Sair sem salvar: pergunta (dados de campo não podem se perder).
-  sairSemSalvar = () => alterado && !confirm('Há alterações não salvas. Sair mesmo assim?');
+  sairSemSalvar = () => alterado && !confirm('Há alterações não salvas. Sair sem salvar?');
   provs(); preencher(); verGps(); fotos(); desenhar();
 }
 let sairSemSalvar = () => false, salvarPendente = () => {};
@@ -534,11 +534,11 @@ let sairSemSalvar = () => false, salvarPendente = () => {};
 // Card recolhível: o título é o botão de abrir e fechar.
 const dobra = (titulo, corpo, aberto = false) => `<details class="card card-dobra"${aberto ? ' open' : ''}><summary><h2>${esc(titulo)}</h2></summary>${corpo}</details>`;
 function telaGuia() {
-  app.innerHTML = `<div class="card"><h1>Guia rápido</h1><p class="muted peq">Resumo da base legal usada pelo app. Indica, não autua: confirme sempre o enquadramento.</p></div>
+  app.innerHTML = `<div class="card"><h1>Guia rápido</h1><p class="muted peq">Resumo da base legal do app. O app indica o enquadramento, mas não autua. Confirme sempre o enquadramento.</p></div>
     ${GUIA.map(([t, x], i) => dobra(t, `<p>${esc(x)}</p>`, i === 0)).join('')}
     ${dobra('Crimes e pena máxima', `<div class="tabela"><table><thead><tr><th>Crime</th><th>Pena máxima</th><th>Rito isolado</th></tr></thead>
       <tbody>${Object.values(CRIMES).map(([n, m]) => `<tr><td>${esc(n)}</td><td>${m / 12 >= 1 ? `${m / 12} ano(s)` : `${m} meses`}</td><td>${m <= 24 ? 'TC' : 'DP'}</td></tr>`).join('')}</tbody></table></div>
-      <p class="muted peq">No concurso de crimes, o app soma as penas máximas: até 2 anos, TC (Lei 9.099/95, art. 61).</p>`)}
+      <p class="muted peq">Com mais de um crime, o app soma as penas máximas. Até 2 anos, o rito é TC (Lei 9.099/95, art. 61).</p>`)}
     ${dobra('UPF-RS', '<p>As multas do Dec. RS 55.374/2020 são em UPF. Em 2026, 1 UPF = R$ 28,3264 (250 UPF = R$ 7.081,60). O valor final é da autoridade julgadora.</p>')}`;
 }
 
@@ -569,15 +569,15 @@ function telaDados() {
       <div class="grade"><div><label for="l-bras">Brasão do RS</label><input id="l-bras" type="file" accept="image/*"><div id="v-bras"></div></div>
         <div><label for="l-cmd">Logo do Comando Ambiental</label><input id="l-cmd" type="file" accept="image/*"><div id="v-cmd"></div></div></div>
       <p><button id="b-ag" type="button">Salvar</button></p></details>
-    <details class="card card-dobra"><summary><h2>Convênios de trânsito</h2></summary><p class="muted peq">Todo o RS tem convênio de trânsito vigente com a BM (CTB, art. 23, III). Marque só os municípios em que o convênio venceu ou foi suspenso: neles o app não sugere AIT nem remoção.</p>
+    <details class="card card-dobra"><summary><h2>Convênios de trânsito</h2></summary><p class="muted peq">Todo o RS tem convênio de trânsito com a BM (CTB, art. 23, III). Marque só os municípios com convênio vencido ou suspenso. Nesses municípios, o app não sugere AIT nem remoção.</p>
       <div class="chips">${MUNICIPIOS.map(m => `<label class="chk chip-chk"><input type="checkbox" data-conv="${esc(m)}"${conv.has(m) ? ' checked' : ''}> ${esc(m)}</label>`).join('')}</div>
       <label for="c-outros">Outros municípios sem convênio (separe por vírgula)</label><input id="c-outros" value="${esc([...conv].filter(m => !MUNICIPIOS.includes(m)).join(', '))}">
       <p><button id="b-conv" type="button">Salvar convênios</button></p></details>
-    <details class="card card-dobra"><summary><h2>Camadas do mapa</h2></summary><p class="muted peq">Importe arquivos KML ou GeoJSON (UC, campo de dunas, linha de preamar, margem de lagoa). Ao registrar o GPS, a abordagem mostra em que área o ponto está e a distância das linhas até 2 km. Shapefile ou KMZ: converta antes para KML (Google Earth ou QGIS). As camadas ficam só neste aparelho e não entram no backup.</p>
+    <details class="card card-dobra"><summary><h2>Camadas do mapa</h2></summary><p class="muted peq">Importe arquivos KML ou GeoJSON: UC, campo de dunas, linha de preamar ou margem de lagoa. No GPS da abordagem, o app mostra a área do ponto e a distância das linhas até 2 km. Converta shapefile ou KMZ para KML antes, no Google Earth ou no QGIS. As camadas ficam só neste aparelho. O backup não leva as camadas.</p>
       <ul id="l-cam" class="peq"></ul>
       <label class="btn sec" for="f-cam-imp">Importar camada</label><input id="f-cam-imp" type="file" accept=".kml,.geojson,.json,application/vnd.google-earth.kml+xml,application/geo+json,application/json" multiple hidden>
       <p id="m-cam" class="msg peq"></p></details>
-    <details class="card card-dobra"><summary><h2>Backup</h2></summary><p class="muted peq">Os dados só existem neste aparelho. O backup sai criptografado com a sua senha.${db.cfg.ultimoBackup ? ` Último: ${fmtData(db.cfg.ultimoBackup)}.` : ''}</p>
+    <details class="card card-dobra"><summary><h2>Backup</h2></summary><p class="muted peq">Os dados existem só neste aparelho. O backup sai criptografado com a sua senha.${db.cfg.ultimoBackup ? ` Último: ${fmtData(db.cfg.ultimoBackup)}.` : ''}</p>
       <div class="linha"><button class="sec" id="b-exp" type="button">Baixar backup</button><button class="sec" id="b-nuvem" type="button">Enviar para a nuvem</button>
         <label class="btn sec" for="f-bak">Importar backup</label><input id="f-bak" type="file" accept="application/json,.json" hidden></div>
       <label class="chk"><input type="checkbox" id="bk-fotos" checked> Incluir as fotos no backup (arquivo maior)</label>

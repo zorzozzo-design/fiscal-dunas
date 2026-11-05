@@ -164,17 +164,17 @@ const PEDE_NUMERO = new Set(['BA', 'BO/TC', 'BO/COP', 'Auto de Constatação', '
 function pendenciasDe(ab, r) {
   const out = [], feitas = new Set(ab.resolvidas || []), p = ab.condutor || {};
   const add = (k, texto) => { if (!feitas.has(k)) out.push({ chave: k, texto }); };
-  if (!p.nome) add('pessoa', 'Identificar o condutor.');
-  if (globalThis.Normas.classificar(ab.lugar).app.some(a => a[0] === 'D04') && !ab.lugar.distMetodo) add('medicao', 'Informar como a distância da preamar foi medida.');
-  for (const pr of ab.providencias || []) if (PEDE_NUMERO.has(pr.tipo) && !String(pr.numero || '').trim()) add(`num:${pr.tipo}`, `Falta o número (${pr.tipo}).`);
+  if (!p.nome) add('pessoa', 'Identifique o condutor.');
+  if (globalThis.Normas.classificar(ab.lugar).app.some(a => a[0] === 'D04') && !ab.lugar.distMetodo) add('medicao', 'Informe como mediu a distância da preamar.');
+  for (const pr of ab.providencias || []) if (PEDE_NUMERO.has(pr.tipo) && !String(pr.numero || '').trim()) add(`num:${pr.tipo}`, `Informe o número do ${pr.tipo}.`);
   if (r.motivos.some(m => m.nivel === 'vermelho') && !(ab.providencias || []).some(pr => ['BA', 'BO/TC', 'BO/COP', 'Auto de Constatação'].includes(pr.tipo)))
-    add('sem-documento', 'Irregular sem BA, BO ou Auto de Constatação.');
-  if (ab.apreensao && !(+ab.apreensao.valor > 0)) add('ap-valor', 'Termo de apreensão sem valor de avaliação.');
-  if (ab.apreensao && !ab.apreensao.fiel?.nome && !ab.apreensao.destino) add('ap-destino', 'Apreensão sem fiel depositário nem destino.');
-  if ((ab.apreensao || ab.notificacao) && !(p.rg && p.endereco && p.municipio)) add('qualificacao', 'Qualificação incompleta (RG, endereço, município).');
-  if (r.motivos.some(m => ['D05', 'D04', 'D06', 'D03'].includes(m.regra) && m.nivel === 'vermelho') && !ab.dano?.areaM2) add('area', 'Informar a área atingida (m²).');
-  if (r.motivos.some(m => m.regra === 'D22' || m.regra === 'D03')) add('laudo', 'Pedir laudo (estágio sucessional ou alteração do local).');
-  if (r.motivos.some(m => m.nivel === 'vermelho') && !nFotos(ab)) add('fotos', 'Sem fotos do fato.');
+    add('sem-documento', 'Faça o BA, o BO ou o Auto de Constatação.');
+  if (ab.apreensao && !(+ab.apreensao.valor > 0)) add('ap-valor', 'Informe o valor de avaliação do veículo.');
+  if (ab.apreensao && !ab.apreensao.fiel?.nome && !ab.apreensao.destino) add('ap-destino', 'Informe o fiel depositário ou o destino do veículo.');
+  if ((ab.apreensao || ab.notificacao) && !(p.rg && p.endereco && p.municipio)) add('qualificacao', 'Complete a qualificação com RG, endereço e município.');
+  if (r.motivos.some(m => ['D05', 'D04', 'D06', 'D03'].includes(m.regra) && m.nivel === 'vermelho') && !ab.dano?.areaM2) add('area', 'Informe a área atingida em m².');
+  if (r.motivos.some(m => m.regra === 'D22' || m.regra === 'D03')) add('laudo', 'Peça laudo do estágio de regeneração ou da alteração do local.');
+  if (r.motivos.some(m => m.nivel === 'vermelho') && !nFotos(ab)) add('fotos', 'Fotografe o fato.');
   return out;
 }
 
