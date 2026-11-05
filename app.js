@@ -236,7 +236,7 @@ function telaAbordagem(id) {
       <div class="linha" style="margin-top:6px"><button class="sec" id="b-gps" type="button">Registrar GPS</button><span id="gps" class="muted peq"></span></div>
       <datalist id="muns">${MUNICIPIOS.map(m => `<option value="${esc(m)}">`).join('')}</datalist></div>
 
-    <div class="card"><h2>1. Local</h2>
+    <details class="card card-dobra" open><summary><h2>1. Local</h2></summary>
       ${chk('lugar.via', '<b>Via:</b> praia aberta à circulação, rua, estrada ou caminho aberto ao público')}
       <label>Ambiente</label><div class="chips">${FEICOES.map(f => `<label class="chk chip-chk"><input type="checkbox" data-arr="lugar.feicoes" value="${esc(f)}"> ${esc(f)}</label>`).join('')}</div>
       ${chk('lugar.fixadora', 'A vegetação atingida <b>fixa duna</b>')}
@@ -247,22 +247,22 @@ function telaAbordagem(id) {
         <div data-se="lugar.uc">${txt('lugar.ucNome', 'Nome da UC')}</div></div>
       ${chk('lugar.amortecimento', 'Zona de amortecimento de UC')}
       ${chk('lugar.marinha', 'Até 33 m da preamar de 1831 (terreno de marinha) ou lagoa ligada ao mar')}
-      ${chk('lugar.privada', 'Área privada (não afasta a proteção ambiental)')}</div>
+      ${chk('lugar.privada', 'Área privada (não afasta a proteção ambiental)')}</details>
 
-    <div class="card"><h2>2. Veículo</h2><div class="grade">${sel('veiculo.tipo', 'Tipo', TIPOS_VEICULO)}${txt('veiculo.placa', 'Placa', ' data-t="maiusc" autocapitalize="characters"')}
+    <details class="card card-dobra" open><summary><h2>2. Veículo</h2></summary><div class="grade">${sel('veiculo.tipo', 'Tipo', TIPOS_VEICULO)}${txt('veiculo.placa', 'Placa', ' data-t="maiusc" autocapitalize="characters"')}
       ${txt('veiculo.chassi', 'Chassi', ' data-t="maiusc" autocapitalize="characters"')}${txt('veiculo.marca', 'Marca')}${txt('veiculo.modelo', 'Modelo')}
       ${txt('veiculo.cor', 'Cor')}${txt('veiculo.ano', 'Ano', ' inputmode="numeric"')}${sel('veiculo.registro', 'Registro e licenciamento', REGISTROS)}</div>
       ${chk('veiculo.semPlaca', 'Sem placa')}${chk('veiculo.alterado', 'Alterado para a prática (ex.: preparo para dunas)')}${chk('veiculo.posseIlicita', 'Posse ilícita (furto, roubo, adulteração)')}
-      <div id="hist"></div></div>
+      <div id="hist"></div></details>
 
-    <div class="card"><h2>3. Condutor</h2>${pessoaCampos('condutor')}
+    <details class="card card-dobra" open><summary><h2>3. Condutor</h2></summary>${pessoaCampos('condutor')}
       <div class="grade">${txt('condutor.nascimento', 'Nascimento', ' type="date"')}${txt('condutor.cnh', 'Nº da CNH')}${txt('condutor.cnhCat', 'Categoria', ' data-t="maiusc"')}
         ${sel('condutor.cnhSit', 'Situação da CNH', CNH_SIT)}</div>
       <h2 class="sec-tit">Proprietário</h2>${chk('proprietario.mesmo', 'O condutor é o proprietário')}
       <div data-senao="proprietario.mesmo">${pessoaCampos('proprietario')}</div>
-      ${chk('proprietario.entregouDirecao', 'Alguém entregou a direção ao condutor (art. 310)')}</div>
+      ${chk('proprietario.entregouDirecao', 'Alguém entregou a direção ao condutor (art. 310)')}</details>
 
-    <div class="card"><h2>4. Dano e fotos</h2><div class="grade">${sel('dano.vegetacao', 'Vegetação atingida', VEGETACAO)}${sel('dano.estagio', 'Estágio de regeneração', ESTAGIOS)}
+    <details class="card card-dobra" open><summary><h2>4. Dano e fotos</h2></summary><div class="grade">${sel('dano.vegetacao', 'Vegetação atingida', VEGETACAO)}${sel('dano.estagio', 'Estágio de regeneração', ESTAGIOS)}
       ${nume('dano.areaM2', 'Área atingida (m²)')}</div>
       ${chk('dano.sulcos', 'Sulcos, rampas ou cortes na duna')}${chk('dano.reiterada', 'Trilha usada de forma reiterada (solo nu)')}
       ${chk('dano.tocaNinho', 'Toca, ninho ou abrigo destruído')}<div data-se="dano.tocaNinho" class="grade">${txt('dano.especie', 'Espécie')}<div>${chk('dano.ameacada', 'Espécie ameaçada')}</div></div>
@@ -270,18 +270,18 @@ function telaAbordagem(id) {
       <h2 class="sec-tit">Fotos</h2><div id="fotos" class="fotos"></div>
       <div class="linha"><label class="btn sec" for="f-cam">Tirar foto</label><input id="f-cam" type="file" accept="image/*" capture="environment" hidden>
         <label class="btn sec" for="f-gal">Da galeria</label><input id="f-gal" type="file" accept="image/*" multiple hidden></div>
-      <p class="muted peq">Hora e coordenadas vêm do arquivo da foto. Foto tirada pelo app sem GPS no arquivo recebe o GPS do aparelho; foto da galeria sem GPS fica sem coordenadas.</p></div>
+      <p class="muted peq">Hora e coordenadas vêm do arquivo da foto. Foto tirada pelo app sem GPS no arquivo recebe o GPS do aparelho; foto da galeria sem GPS fica sem coordenadas.</p></details>
 
-    <div class="card"><h2>5. Condutas</h2>
+    <details class="card card-dobra" open><summary><h2>5. Condutas</h2></summary>
       ${chk('condutas.embriaguez', 'Sinais de embriaguez')}${chk('condutas.recusaTeste', 'Recusa ao teste de alcoolemia')}
       ${chk('condutas.perigoDano', 'Direção gerando perigo de dano')}${chk('condutas.velocidadePessoas', 'Velocidade incompatível perto de pessoas')}
       ${chk('condutas.manobra', 'Zerinho, cavalo de pau ou arrancada')}${chk('condutas.racha', 'Racha ou disputa')}${chk('condutas.semCapacete', 'Sem capacete')}
       ${chk('condutas.fuga', 'Fuga, desobediência ou embaraço à fiscalização')}${chk('condutas.evento', 'Passeio ou evento organizado')}
-      <div class="grade">${txt('reincidencia', 'Nº de auto anterior confirmado (reincidência)')}</div></div>
+      <div class="grade">${txt('reincidencia', 'Nº de auto anterior confirmado (reincidência)')}</div></details>
 
     <div id="enq"></div>
 
-    <div class="card"><h2>6. Medidas</h2><div id="provs" class="provs"></div>
+    <details class="card card-dobra" open><summary><h2>6. Medidas</h2></summary><div id="provs" class="provs"></div>
       <h2 class="sec-tit">Apreensão do veículo</h2><label class="chk"><input type="checkbox" id="ap-on"> Apreender</label>
       <div data-se="apreensao"><div id="bases" class="peq"></div>
         <div class="grade">${sel('apreensao.base', 'Base da apreensão', Object.keys(BASES), BASES)}${nume('apreensao.valor', 'Valor de avaliação (R$)')}
@@ -292,9 +292,9 @@ function telaAbordagem(id) {
         ${chk('apreensao.fiel.autuado', 'O fiel depositário é o autuado')}</div>
       <h2 class="sec-tit">Notificação</h2><label class="chk"><input type="checkbox" id="nt-on"> Notificar o condutor</label>
       <div data-se="notificacao"><p class="peq muted">${esc(NOTIF_ABERTURA)}</p><textarea data-k="notificacao.motivo" rows="3"></textarea>
-        ${txt('notificacao.comparecimento', 'Endereço de comparecimento', ` placeholder="${esc(db.cfg.comparecimento || '')}"`)}</div></div>
+        ${txt('notificacao.comparecimento', 'Endereço de comparecimento', ` placeholder="${esc(db.cfg.comparecimento || '')}"`)}</div></details>
 
-    <div class="card"><h2>7. Fatos e documentos</h2>
+    <details class="card card-dobra" open><summary><h2>7. Fatos e documentos</h2></summary>
       <label>Descrição dos fatos (histórico do BO e do Auto de Constatação)</label><textarea data-k="fatos" rows="5"></textarea>
       <p><button class="sec" id="b-fatos" type="button">Gerar texto pelo enquadramento</button></p>
       <div class="grade">${txt('atenuantes', 'Atenuantes')}</div>${chk('recusaAssinatura', 'O autuado recusou-se a assinar')}
@@ -304,7 +304,7 @@ function telaAbordagem(id) {
         <button class="sec" type="button" data-doc="fotos">Relatório fotográfico</button>
         <button class="sec" type="button" id="b-copiar">Copiar histórico</button></div>
       <p class="muted peq">No celular, "Imprimir" permite salvar como PDF. Preencha antes o agente e os logos em Dados.</p>
-      ${ex ? '<details><summary>Apagar abordagem</summary><p><button type="button" id="b-apagar" class="perigo">Apagar esta abordagem</button></p></details>' : ''}</div>
+      ${ex ? '<details><summary>Apagar abordagem</summary><p><button type="button" id="b-apagar" class="perigo">Apagar esta abordagem</button></p></details>' : ''}</details>
     <div class="barra-ab"><button type="button" id="ba-cor" class="ba-cor"></button><span id="m-ab" class="msg peq"></span><button id="b-salvar" type="button">Salvar</button></div></form>`;
   document.body.classList.add('com-barra');
   const f = $('#fa');
