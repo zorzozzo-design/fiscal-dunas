@@ -117,9 +117,10 @@ function checar(ab, ctx = {}) {
   const dunaFrontal = (ab.lugar?.feicoes || []).includes('Duna frontal');
   const area = d.areaM2 ? ` (${d.areaM2} m²)` : '';
   if (dunaFrontal || (comDano && ab.lugar?.fixadora))
-    add('D05', 'vermelho', dunaFrontal ? `Veículo sobre duna frontal, na faixa da preamar, danificando a vegetação fixadora${area}.` : `Vegetação fixadora de dunas danificada${area}.`,
+    // O documento só afirma o dano depois que o agente marca a vegetação atingida.
+    add('D05', 'vermelho', dunaFrontal ? `Veículo sobre duna frontal, na faixa da preamar${comDano ? `, danificando a vegetação fixadora${area}` : ''}.` : `Vegetação fixadora de dunas danificada${area}.`,
       'Lei 12.651/2012, art. 4º, VI', `Infração: ${DEC}, art. 56 (250 a 2.500 UPF por ha ou fração)${dobro}`, 'L9605-50',
-      dunaFrontal ? 'O painel presume o dano. Descreva no histórico a vegetação esmagada. Fotografe o rastro.' : 'Descreva a vegetação. Fotografe o dano. Peça perícia.');
+      dunaFrontal ? 'O painel presume o dano. Marque a vegetação atingida. Descreva no histórico a vegetação esmagada. Fotografe o rastro.' : 'Descreva a vegetação. Fotografe o dano. Peça perícia.');
   else if (comDano && ehApp)
     add(c.app[0][0], 'vermelho', `Vegetação nativa danificada em APP (${c.app.map(a => a[1].toLowerCase()).join('; ')}).`,
       c.app.map(a => a[2]).join('; '), `Infração: ${DEC}, art. 56 (250 a 2.500 UPF por ha ou fração)${dobro}. Crime a conferir: art. 48 ou art. 38`, '',

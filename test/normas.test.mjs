@@ -65,7 +65,9 @@ test('D05: veículo sobre duna frontal = dano presumido à vegetação fixadora'
   assert.equal(rito(checar(a)).rito, 'TC');
   assert.ok(basesApreensao(a, checar(a)).find(b => b.base === 'penal').ok);
   assert.ok(!tem(a, 'D20'), 'não é mais "sem irregularidade"');
-  assert.match(de(ab({ lugar: { feicoes: ['Duna frontal'] }, dano: { areaM2: 40 } }), 'D05')[0].texto, /40 m²/);
+  assert.doesNotMatch(m.texto, /danific/, 'sem vegetação marcada, o documento não afirma o dano');
+  const comVeg = de(ab({ lugar: { feicoes: ['Duna frontal'] }, dano: { vegetacao: 'Herbácea', areaM2: 40 } }), 'D05')[0].texto;
+  assert.match(comVeg, /danificando a vegetação fixadora \(40 m²\)/);
 });
 
 test('D06: faixa da lagoa 100 m rural, 50 m até 20 ha, 30 m urbana', () => {

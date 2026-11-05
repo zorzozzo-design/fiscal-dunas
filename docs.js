@@ -165,6 +165,7 @@ function pendenciasDe(ab, r) {
   const out = [], feitas = new Set(ab.resolvidas || []), p = ab.condutor || {};
   const add = (k, texto) => { if (!feitas.has(k)) out.push({ chave: k, texto }); };
   if (!p.nome) add('pessoa', 'Identifique o condutor.');
+  if ((ab.lugar?.feicoes || []).includes('Duna frontal') && (!ab.dano?.vegetacao || ab.dano.vegetacao === 'Nenhuma')) add('vegetacao', 'Informe a vegetação atingida.');
   if (globalThis.Normas.classificar(ab.lugar).app.some(a => a[0] === 'D04') && !ab.lugar.distMetodo) add('medicao', 'Informe como mediu a distância da preamar.');
   for (const pr of ab.providencias || []) if (PEDE_NUMERO.has(pr.tipo) && !String(pr.numero || '').trim()) add(`num:${pr.tipo}`, `Informe o número do ${pr.tipo}.`);
   if (r.motivos.some(m => m.nivel === 'vermelho') && !(ab.providencias || []).some(pr => ['BA', 'BO/TC', 'BO/COP', 'Auto de Constatação'].includes(pr.tipo)))

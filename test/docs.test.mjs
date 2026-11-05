@@ -78,6 +78,13 @@ test('auto e pendência: como a distância da preamar foi medida', () => {
   assert.ok(autoConstatacao(com, cfg, rs).includes('Distância da linha de preamar máxima: 120 m (medição: trena)'));
 });
 
+test('duna frontal sem vegetação marcada: pendência para informar a vegetação', () => {
+  const a = { ...ab, lugar: { via: false, feicoes: ['Duna frontal'] }, dano: { vegetacao: 'Nenhuma' } }, ms = checar(a);
+  const rs = { motivos: ms, crimes: crimesDe(ms), rito: rito(ms), agravantes: [] };
+  assert.ok(pendenciasDe(a, rs).some(p => p.chave === 'vegetacao'));
+  assert.ok(!pendenciasDe({ ...a, dano: { vegetacao: 'Herbácea' } }, rs).some(p => p.chave === 'vegetacao'));
+});
+
 test('motivo sugerido usa os vermelhos', () => assert.match(motivoSugerido(motivos), /fixadora/));
 test('lembrete de backup', () => {
   assert.equal(lembreteBackup(null, '2026-11-04', false), null);
