@@ -109,9 +109,13 @@ function checar(ab, ctx = {}) {
       'Lei 15.434/2020, art. 208', `Infração: ${DEC}, art. 89 (500 a 10.000 UPF)${dobro}`, 'L9605-63', 'Enquadre só com laudo da alteração.');
 
   // D04 a D06: APP. Dano com vegetação fixadora = art. 50; outra APP = Dec. art. 56, crime a conferir.
-  if (comDano && ab.lugar?.fixadora)
-    add('D05', 'vermelho', `Vegetação fixadora de dunas danificada${d.areaM2 ? ` (${d.areaM2} m²)` : ''}.`,
-      'Lei 12.651/2012, art. 4º, VI', `Infração: ${DEC}, art. 56 (250 a 2.500 UPF por ha ou fração)${dobro}`, 'L9605-50', 'Descreva a vegetação, fotografe e peça perícia.');
+  // Veículo sobre duna frontal (faixa da preamar) sempre danifica a vegetação fixadora: dano presumido.
+  const dunaFrontal = (ab.lugar?.feicoes || []).includes('Duna frontal');
+  const area = d.areaM2 ? ` (${d.areaM2} m²)` : '';
+  if (dunaFrontal || (comDano && ab.lugar?.fixadora))
+    add('D05', 'vermelho', dunaFrontal ? `Veículo sobre duna frontal, na faixa da preamar, danificando a vegetação fixadora${area}.` : `Vegetação fixadora de dunas danificada${area}.`,
+      'Lei 12.651/2012, art. 4º, VI', `Infração: ${DEC}, art. 56 (250 a 2.500 UPF por ha ou fração)${dobro}`, 'L9605-50',
+      dunaFrontal ? 'Dano presumido no painel: descreva a vegetação esmagada e fotografe o rastro, a materialidade precisa estar no histórico.' : 'Descreva a vegetação, fotografe e peça perícia.');
   else if (comDano && ehApp)
     add(c.app[0][0], 'vermelho', `Vegetação nativa danificada em APP (${c.app.map(a => a[1].toLowerCase()).join('; ')}).`,
       c.app.map(a => a[2]).join('; '), `Infração: ${DEC}, art. 56 (250 a 2.500 UPF por ha ou fração)${dobro}. Crime a conferir: art. 48 ou art. 38`);

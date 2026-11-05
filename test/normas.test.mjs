@@ -42,6 +42,19 @@ test('D05: vegetação fixadora danificada = art. 50 e Dec. art. 56, em qualquer
   assert.ok(!tem(ab({ lugar: { fixadora: true } }), 'D05'), 'sem dano, sem enquadramento');
 });
 
+test('D05: veículo sobre duna frontal = dano presumido à vegetação fixadora', () => {
+  const a = ab({ lugar: { feicoes: ['Duna frontal'] }, veiculo: { tipo: 'Quadriciclo' } });
+  const m = de(a, 'D05')[0];
+  assert.ok(m, 'duna frontal sem dano marcado gera D05');
+  assert.equal(m.nivel, 'vermelho');
+  assert.equal(m.crime, 'L9605-50');
+  assert.match(m.texto, /duna frontal/i);
+  assert.equal(rito(checar(a)).rito, 'TC');
+  assert.ok(basesApreensao(a, checar(a)).find(b => b.base === 'penal').ok);
+  assert.ok(!tem(a, 'D20'), 'não é mais "sem irregularidade"');
+  assert.match(de(ab({ lugar: { feicoes: ['Duna frontal'] }, dano: { areaM2: 40 } }), 'D05')[0].texto, /40 m²/);
+});
+
 test('D06: faixa da lagoa 100 m rural, 50 m até 20 ha, 30 m urbana', () => {
   assert.equal(faixaLagoa({ zona: 'rural' }), 100);
   assert.equal(faixaLagoa({ zona: 'rural', ate20ha: true }), 50);
@@ -68,7 +81,7 @@ test('D09: até 2 anos somados é TC; acima, DP', () => {
   assert.equal(rito(tres).rito, 'DP');
   assert.equal(rito(checar(ab({ condutas: { embriaguez: true } }))).rito, 'DP');
   assert.equal(rito(checar(ab())).rito, null);
-  const amarelo = rito(checar(ab({ lugar: { feicoes: ['Duna frontal'] }, dano: { sulcos: true } })));
+  const amarelo = rito(checar(ab({ lugar: { feicoes: ['Campo de dunas móveis'] }, dano: { sulcos: true } })));
   assert.equal(amarelo.rito, null);
   assert.equal(amarelo.seConfirmar, 'DP');
   assert.equal(crimesDe(dois).length, 2);
