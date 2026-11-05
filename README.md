@@ -19,8 +19,9 @@ Os dados ficam só no aparelho, criptografados com a senha (AES-GCM, chave PBKDF
 
    O painel recalcula a cada campo: regras D01 a D27, crime e infração sugeridos, rito pela soma das penas máximas, agravantes e pendências. **O painel indica, não autua.** O Termo de Apreensão só sai com base válida e valor de avaliação (D10 e D14).
 4. **Documentos:** Notificação Ambiental, Termo de Apreensão e Fiel Depositário, Auto de Constatação (Dec. RS 55.374/2020, art. 119), Relatório Fotográfico (legenda, hora, coordenadas e origem da coordenada de cada foto) e cópia do histórico para o BO/TC. O Auto e o histórico citam o relatório quando há fotos. No celular, "Imprimir" permite salvar em PDF.
-5. **Guia:** resumo da base legal para consulta sem internet (útil para colegas de reforço).
-6. **Backup:** exportar ou enviar para a nuvem; importar em outro aparelho com a senha de origem. As abordagens são mescladas, e vale a edição mais recente.
+5. **Denúncias:** aba ao lado de Abordagens. Registre data, situação, tipo, origem, local e relato (cole a mensagem do WhatsApp). As placas citadas ligam a denúncia às abordagens com a mesma placa. As denúncias entram no backup.
+6. **Guia:** resumo da base legal para consulta sem internet (útil para colegas de reforço).
+7. **Backup:** exportar ou enviar para a nuvem; importar em outro aparelho com a senha de origem. As abordagens são mescladas, e vale a edição mais recente.
 
 ## Regras
 

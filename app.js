@@ -155,11 +155,65 @@ function calcular(A) {
 
 // ---------- lista de abordagens ----------
 const filtro = { q: '' };
+const abas = aba => `<div class="abas-seg">${[['lista', '#/', 'Abordagens'], ['den', '#/denuncias', 'Denúncias']]
+  .map(([k, h, t]) => `<a href="${h}" class="${aba === k ? 'ativo' : ''}">${t}</a>`).join('')}</div>`;
+
+// ---------- denúncias ----------
+const TIPOS_DEN = ['Veículo em duna ou restinga', 'Evento off-road', 'Extração de areia', 'Dano à vegetação', 'Outro'];
+const ORIGENS_DEN = ['190', 'Disque-denúncia', 'WhatsApp', 'Pessoalmente', 'Outro órgão', 'Outra'];
+const SITUACOES_DEN = ['Nova', 'Em apuração', 'Atendida', 'Improcedente'];
+const separar = s => String(s || '').split(/[,;\n]/).map(x => x.trim()).filter(Boolean);
+function telaDenuncias() {
+  const ds = (db.cfg.denuncias ||= []).slice().sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+  app.innerHTML = `<div class="card">${abas('den')}<div class="linha" style="justify-content:space-between"><h1>Denúncias</h1><a class="btn" href="#/denuncia/novo">Nova denúncia</a></div>
+    <ul class="lista">${ds.map(d => `<li><a href="#/denuncia/${d.id}"><div class="nome">${esc(d.tipo)} · ${esc(d.situacao)}</div>
+      <div class="info">${fmtData(d.data)} · ${esc([d.local, d.municipio].filter(Boolean).join(', '))}${d.placas?.length ? ' · ' + esc(d.placas.join(', ')) : ''}</div>
+      <div class="info">${esc((d.descricao || '').slice(0, 90))}</div></a></li>`).join('') || '<li class="muted peq" style="padding:10px">Nenhuma denúncia.</li>'}</ul></div>`;
+}
+function telaDenuncia(id) {
+  const ex = (db.cfg.denuncias ||= []).find(d => d.id === id);
+  const d = ex ? structuredClone(ex) : { id: novoId(), data: hojeIso(), tipo: TIPOS_DEN[0], origem: ORIGENS_DEN[0], situacao: 'Nova',
+    municipio: lerPref('fdunas-mun') || '', local: '', descricao: '', pessoas: [], placas: [], obs: '' };
+  // Abordagens com a mesma placa: liga a denúncia ao que já foi feito no campo.
+  const abs = Object.values(db.abordagens).filter(a => a.veiculo?.placa && d.placas.includes(soAlnum(a.veiculo.placa).toUpperCase()));
+  app.innerHTML = `<div class="card"><p class="peq"><a href="#/denuncias">← Denúncias</a></p><h1>${ex ? 'Denúncia' : 'Nova denúncia'}</h1>
+    <div class="grade">
+      <div><label for="d-data">Data</label><input id="d-data" type="date" value="${esc(d.data)}"></div>
+      <div><label for="d-sit">Situação</label><select id="d-sit">${opcoes(SITUACOES_DEN, d.situacao)}</select></div>
+      <div><label for="d-tipo">Tipo</label><select id="d-tipo">${opcoes(TIPOS_DEN, d.tipo)}</select></div>
+      <div><label for="d-orig">Origem</label><select id="d-orig">${opcoes(ORIGENS_DEN, d.origem)}</select></div>
+      <div><label for="d-mun">Município</label><input id="d-mun" list="d-muns" value="${esc(d.municipio)}"></div>
+      <div><label for="d-local">Local</label><input id="d-local" value="${esc(d.local)}" placeholder="Praia, duna, lagoa, acesso"></div></div>
+    <datalist id="d-muns">${MUNICIPIOS.map(m => `<option value="${esc(m)}">`).join('')}</datalist>
+    <label for="d-desc">Relato (cole a mensagem aqui)</label><textarea id="d-desc" rows="5">${esc(d.descricao)}</textarea>
+    <label for="d-placas">Placas (separe com vírgula)</label><input id="d-placas" autocapitalize="characters" value="${esc(d.placas.join(', '))}">
+    <label for="d-pessoas">Pessoas citadas (uma por linha)</label><textarea id="d-pessoas" rows="2">${esc(d.pessoas.join('\n'))}</textarea>
+    <label for="d-obs">Providências e observações</label><textarea id="d-obs" rows="3">${esc(d.obs)}</textarea>
+    ${abs.length ? `<h2 class="sec-tit">Abordagens com a mesma placa</h2><ul class="lista">${abs.map(a => `<li><a href="#/ab/${a.id}"><div class="nome">${esc(a.veiculo.placa)} · ${esc(nomeProprio(a.condutor?.nome) || 'Condutor não identificado')}</div>
+      <div class="info">${fmtData(a.data)} · ${esc([a.local, a.municipio].filter(Boolean).join(', '))}</div></a></li>`).join('')}</ul>` : ''}
+    <p><button id="b-den" type="button">Salvar denúncia</button></p>
+    ${ex ? '<details><summary>Apagar denúncia</summary><p><button type="button" id="b-apagar-den" class="perigo">Apagar esta denúncia</button></p></details>' : ''}</div>`;
+  $('#b-den').onclick = async () => {
+    Object.assign(d, { data: $('#d-data').value, situacao: $('#d-sit').value, tipo: $('#d-tipo').value, origem: $('#d-orig').value,
+      municipio: $('#d-mun').value.trim(), local: $('#d-local').value.trim(), descricao: $('#d-desc').value.trim(),
+      placas: separar($('#d-placas').value).map(x => soAlnum(x).toUpperCase()), pessoas: separar($('#d-pessoas').value), obs: $('#d-obs').value.trim(), atualizadoEm: agora() });
+    d.criadoEm ||= agora();
+    const i = db.cfg.denuncias.findIndex(x => x.id === d.id);
+    if (i >= 0) db.cfg.denuncias[i] = d; else db.cfg.denuncias.push(d);
+    await salvar(); aviso('Denúncia salva.');
+    if (ex) telaDenuncia(d.id); else location.hash = '#/denuncia/' + d.id;
+  };
+  if (ex) $('#b-apagar-den').onclick = async () => {
+    if (!confirm('Apagar esta denúncia?')) return;
+    db.cfg.denuncias = db.cfg.denuncias.filter(x => x.id !== d.id); await salvar(); location.hash = '#/denuncias';
+  };
+}
+
 function telaAbordagens() {
   const todas = Object.values(db.abordagens).sort((a, b) => b.data.localeCompare(a.data));
   const lembrete = lembreteBackup(db.cfg.ultimoBackup, hojeIso(), todas.length > 0);
   app.innerHTML = `<div class="card">${lembrete ? `<p class="msg erro peq">${esc(lembrete)} <a href="#/dados">Abrir Dados</a></p>` : ''}
-    <div class="linha" style="justify-content:space-between"><h1>Abordagens</h1><a class="btn" href="#/ab/novo">Nova abordagem</a></div>
+    ${abas('lista')}<div class="linha" style="justify-content:space-between"><h1>Abordagens</h1><a class="btn" href="#/ab/novo">Nova abordagem</a></div>
     <input id="q" type="search" placeholder="Placa, chassi, nome ou CPF" value="${esc(filtro.q)}" autocomplete="off">
     <p id="cont" class="muted peq"></p><ul id="lista" class="lista"></ul></div>`;
   const desenhar = () => {
@@ -497,6 +551,10 @@ function mesclarBackup(outro) {
     if (!a || (b.atualizadoEm || '') > (a.atualizadoEm || '')) { db.abordagens[id] = b; sujosAb.add(id); n++; }
   }
   db.cfg.semConvenio = [...new Set([...(db.cfg.semConvenio || []), ...(outro.cfg?.semConvenio || [])])];
+  for (const x of outro.cfg?.denuncias || []) { // vale a versão editada por último
+    const l = (db.cfg.denuncias ||= []), i = l.findIndex(y => y.id === x.id);
+    if (i < 0) { l.push(x); n++; } else if ((x.atualizadoEm || '') > (l[i].atualizadoEm || '')) { l[i] = x; n++; }
+  }
   return n;
 }
 function telaDados() {
@@ -619,8 +677,11 @@ function rotear() {
   if (location.hash !== hashAtual && sairSemSalvar()) { history.replaceState(null, '', hashAtual); return; }
   hashAtual = location.hash; sairSemSalvar = () => false; salvarPendente = () => {};
   document.body.classList.remove('com-barra');
-  document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('ativo', a.getAttribute('href') === (location.hash || '#/')));
   const h = location.hash;
+  const secao = /^#\/(ab\/|denuncia)/.test(h) ? '#/' : h || '#/';
+  document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('ativo', a.getAttribute('href') === secao));
+  if (h === '#/denuncias') return telaDenuncias();
+  if (h.startsWith('#/denuncia/')) return telaDenuncia(h.slice(11));
   if (h.startsWith('#/ab/')) return telaAbordagem(h.slice(5));
   if (h === '#/guia') return telaGuia();
   if (h === '#/dados') return telaDados();
