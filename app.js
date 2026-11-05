@@ -477,13 +477,15 @@ function telaAbordagem(id) {
 let sairSemSalvar = () => false, salvarPendente = () => {};
 
 // ---------- guia de consulta rápida (offline) ----------
+// Card recolhível: o título é o botão de abrir e fechar.
+const dobra = (titulo, corpo, aberto = false) => `<details class="card card-dobra"${aberto ? ' open' : ''}><summary><h2>${esc(titulo)}</h2></summary>${corpo}</details>`;
 function telaGuia() {
   app.innerHTML = `<div class="card"><h1>Guia rápido</h1><p class="muted peq">Resumo da base legal usada pelo app. Indica, não autua: confirme sempre o enquadramento.</p></div>
-    ${GUIA.map(([t, x]) => `<div class="card"><h2>${esc(t)}</h2><p>${esc(x)}</p></div>`).join('')}
-    <div class="card"><h2>Crimes e pena máxima</h2><div class="tabela"><table><thead><tr><th>Crime</th><th>Pena máxima</th><th>Rito isolado</th></tr></thead>
+    ${GUIA.map(([t, x], i) => dobra(t, `<p>${esc(x)}</p>`, i === 0)).join('')}
+    ${dobra('Crimes e pena máxima', `<div class="tabela"><table><thead><tr><th>Crime</th><th>Pena máxima</th><th>Rito isolado</th></tr></thead>
       <tbody>${Object.values(CRIMES).map(([n, m]) => `<tr><td>${esc(n)}</td><td>${m / 12 >= 1 ? `${m / 12} ano(s)` : `${m} meses`}</td><td>${m <= 24 ? 'TC' : 'DP'}</td></tr>`).join('')}</tbody></table></div>
-      <p class="muted peq">No concurso de crimes, o app soma as penas máximas: até 2 anos, TC (Lei 9.099/95, art. 61).</p></div>
-    <div class="card"><h2>UPF-RS</h2><p>As multas do Dec. RS 55.374/2020 são em UPF. Em 2026, 1 UPF = R$ 28,3264 (250 UPF = R$ 7.081,60). O valor final é da autoridade julgadora.</p></div>`;
+      <p class="muted peq">No concurso de crimes, o app soma as penas máximas: até 2 anos, TC (Lei 9.099/95, art. 61).</p>`)}
+    ${dobra('UPF-RS', '<p>As multas do Dec. RS 55.374/2020 são em UPF. Em 2026, 1 UPF = R$ 28,3264 (250 UPF = R$ 7.081,60). O valor final é da autoridade julgadora.</p>')}`;
 }
 
 // ---------- dados ----------
@@ -500,28 +502,29 @@ function mesclarBackup(outro) {
 function telaDados() {
   const ag = db.cfg.agente || {}, logos = { ...(db.cfg.logos || {}) };
   const conv = new Set(db.cfg.semConvenio || []);
-  app.innerHTML = `<div class="card"><h1>Dados</h1><h2>Agente</h2>
+  app.innerHTML = `<div class="card"><h1>Dados</h1><p class="muted peq">Agente, convênios, camadas do mapa e backup.</p></div>
+    <details class="card card-dobra"${ag.nome ? '' : ' open'}><summary><h2>Agente</h2></summary>
       <div class="grade"><div><label for="g-nome">Nome</label><input id="g-nome" value="${esc(ag.nome)}"></div>
         <div><label for="g-id">Id funcional</label><input id="g-id" value="${esc(ag.idFunc)}"></div>
         <div><label for="g-fr">Fração</label><input id="g-fr" value="${esc(ag.fracao)}" placeholder="4º Pel/1º BABM"></div></div>
       <label for="g-comp">Endereço de comparecimento (notificação)</label><input id="g-comp" value="${esc(db.cfg.comparecimento)}">
       <div class="grade"><div><label for="l-bras">Brasão do RS</label><input id="l-bras" type="file" accept="image/*"><div id="v-bras"></div></div>
         <div><label for="l-cmd">Logo do Comando Ambiental</label><input id="l-cmd" type="file" accept="image/*"><div id="v-cmd"></div></div></div>
-      <p><button id="b-ag" type="button">Salvar</button></p></div>
-    <div class="card"><h2>Convênios de trânsito</h2><p class="muted peq">Todo o RS tem convênio de trânsito vigente com a BM (CTB, art. 23, III). Marque só os municípios em que o convênio venceu ou foi suspenso: neles o app não sugere AIT nem remoção.</p>
+      <p><button id="b-ag" type="button">Salvar</button></p></details>
+    <details class="card card-dobra"><summary><h2>Convênios de trânsito</h2></summary><p class="muted peq">Todo o RS tem convênio de trânsito vigente com a BM (CTB, art. 23, III). Marque só os municípios em que o convênio venceu ou foi suspenso: neles o app não sugere AIT nem remoção.</p>
       <div class="chips">${MUNICIPIOS.map(m => `<label class="chk chip-chk"><input type="checkbox" data-conv="${esc(m)}"${conv.has(m) ? ' checked' : ''}> ${esc(m)}</label>`).join('')}</div>
       <label for="c-outros">Outros municípios sem convênio (separe por vírgula)</label><input id="c-outros" value="${esc([...conv].filter(m => !MUNICIPIOS.includes(m)).join(', '))}">
-      <p><button id="b-conv" type="button">Salvar convênios</button></p></div>
-    <div class="card"><h2>Camadas do mapa</h2><p class="muted peq">Importe arquivos KML ou GeoJSON (UC, campo de dunas, linha de preamar, margem de lagoa). Ao registrar o GPS, a abordagem mostra em que área o ponto está e a distância das linhas até 2 km. Shapefile ou KMZ: converta antes para KML (Google Earth ou QGIS). As camadas ficam só neste aparelho e não entram no backup.</p>
+      <p><button id="b-conv" type="button">Salvar convênios</button></p></details>
+    <details class="card card-dobra"><summary><h2>Camadas do mapa</h2></summary><p class="muted peq">Importe arquivos KML ou GeoJSON (UC, campo de dunas, linha de preamar, margem de lagoa). Ao registrar o GPS, a abordagem mostra em que área o ponto está e a distância das linhas até 2 km. Shapefile ou KMZ: converta antes para KML (Google Earth ou QGIS). As camadas ficam só neste aparelho e não entram no backup.</p>
       <ul id="l-cam" class="peq"></ul>
       <label class="btn sec" for="f-cam-imp">Importar camada</label><input id="f-cam-imp" type="file" accept=".kml,.geojson,.json,application/vnd.google-earth.kml+xml,application/geo+json,application/json" multiple hidden>
-      <p id="m-cam" class="msg peq"></p></div>
-    <div class="card"><h2>Backup</h2><p class="muted peq">Os dados só existem neste aparelho. O backup sai criptografado com a sua senha.${db.cfg.ultimoBackup ? ` Último: ${fmtData(db.cfg.ultimoBackup)}.` : ''}</p>
+      <p id="m-cam" class="msg peq"></p></details>
+    <details class="card card-dobra"><summary><h2>Backup</h2></summary><p class="muted peq">Os dados só existem neste aparelho. O backup sai criptografado com a sua senha.${db.cfg.ultimoBackup ? ` Último: ${fmtData(db.cfg.ultimoBackup)}.` : ''}</p>
       <div class="linha"><button class="sec" id="b-exp" type="button">Baixar backup</button><button class="sec" id="b-nuvem" type="button">Enviar para a nuvem</button>
         <label class="btn sec" for="f-bak">Importar backup</label><input id="f-bak" type="file" accept="application/json,.json" hidden></div>
       <label class="chk"><input type="checkbox" id="bk-fotos" checked> Incluir as fotos no backup (arquivo maior)</label>
       <p id="m-bak" class="msg peq"></p>
-      <details><summary>Apagar todos os dados deste aparelho</summary><p><button id="b-zerar" class="perigo" type="button">Apagar tudo</button></p></details></div>`;
+      <details><summary>Apagar todos os dados deste aparelho</summary><p><button id="b-zerar" class="perigo" type="button">Apagar tudo</button></p></details></details>`;
   const verLogos = () => {
     $('#v-bras').innerHTML = logos.brasao ? `<img src="${esc(logos.brasao)}" alt="" style="height:56px;margin-top:6px">` : '';
     $('#v-cmd').innerHTML = logos.comando ? `<img src="${esc(logos.comando)}" alt="" style="height:56px;margin-top:6px">` : '';
