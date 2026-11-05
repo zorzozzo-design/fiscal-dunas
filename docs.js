@@ -1,4 +1,4 @@
-// Notificação, Termo de Apreensão e Fiel Depositário e Auto de Constatação, no layout dos modelos do Comando Ambiental
+// Notificação, Termo de Apreensão e Fiel Depositário, Auto de Constatação e Relatório Fotográfico, no layout dos modelos do Comando Ambiental
 // da Brigada Militar (mesmo do Fiscal Pesca). Gera HTML para impressão (ou PDF pelo "Imprimir" do navegador).
 (() => {
 
@@ -35,6 +35,8 @@ const pessoa = p => `
   <table class="doc-grade"><tr>${campo('CPF:', fmtCpf(p.cpf))}${campo('RG:', p.rg)}${campo('Telefone:', p.telefone)}</tr></table>
   <table class="doc-grade"><tr>${campo('Endereço:', p.endereco, 'doc-largo')}${campo('Bairro:', p.bairro)}</tr></table>
   <table class="doc-grade"><tr>${campo('Município/UF:', p.municipio)}${campo('CNH:', [p.cnh, p.cnhCat].filter(Boolean).join(' cat. '))}</tr></table>`;
+const nFotos = ab => (ab.fotos || []).length;
+const plural = n => `${n} foto${n > 1 ? 's' : ''}`;
 const recusa = ab => ab.recusaAssinatura ? '<p class="doc-texto"><b>O autuado recusou-se a assinar</b> (Lei 15.434/2020, art. 113, §1º).</p>' : '';
 
 // Motivos em vermelho (sem nenhum, os amarelos), com a norma, para a notificação e o auto.
@@ -111,6 +113,7 @@ function autoConstatacao(ab, cfg, r) {
     <div class="doc-faixa">VEÍCULO</div><p class="doc-texto">${esc(descVeiculo(ab.veiculo || {}))}</p>
     <div class="doc-faixa">DESCRIÇÃO DOS FATOS</div>
     <p class="doc-texto">${esc(ab.fatos || historicoBO(ab, r)).replace(/\n/g, '<br>')}</p>
+    ${nFotos(ab) ? `<p class="doc-texto">Anexo: relatório fotográfico com ${plural(nFotos(ab))}.</p>` : ''}
     ${d.areaM2 ? `<p class="doc-texto">Área atingida: ${esc(num(d.areaM2))} m². Vegetação: ${esc(d.vegetacao)}${d.estagio ? `, estágio ${esc(d.estagio.toLowerCase())}` : ''}.</p>` : ''}
     <div class="doc-faixa">CIRCUNSTÂNCIAS AGRAVANTES E ATENUANTES (Dec. RS 55.374/2020, art. 6º)</div>
     <p class="doc-texto">Agravantes: ${esc(r.agravantes.join('; ') || 'nenhuma identificada')}.<br>Atenuantes: ${esc(ab.atenuantes || 'nenhuma informada')}.</p>
@@ -120,6 +123,22 @@ function autoConstatacao(ab, cfg, r) {
     <table class="doc-grade"><tr><td class="doc-assin">Assinatura do autuado:</td></tr></table>
     ${agente(cfg, 'AGENTE RESPONSÁVEL PELA CONSTATAÇÃO')}
     <div class="doc-vias">1ª via – SEMA/FEPAM | 2ª via – Autuado | 3ª via – Unidade</div>
+  </div>`;
+}
+
+// Relatório fotográfico: cada foto com legenda, hora e coordenadas, dizendo de onde veio a coordenada.
+const ORIGEM = { exif: 'GPS gravado na foto', aparelho: 'GPS do aparelho no momento da foto' };
+const fotoInfo = x => [x.data ? `${dataBr(x.data)} ${x.data.slice(11, 16)}` : 'data não registrada no arquivo',
+  x.gps ? `${num(x.gps.lat.toFixed(5))}, ${num(x.gps.lon.toFixed(5))}${x.gps.precisaoM ? ` (±${x.gps.precisaoM} m)` : ''} (WGS 84), ${ORIGEM[x.origem] || ''}` : 'sem coordenadas'].join(' · ');
+function relatorioFotografico(ab, cfg) {
+  return `<div class="doc">
+    ${cabecalho(cfg, 'RELATÓRIO FOTOGRÁFICO')}
+    <table class="doc-grade"><tr>${campo('Data:', dataBr(ab.data))}${campo('Hora:', ab.data.slice(11, 16))}${campo('Município:', ab.municipio)}</tr>
+      <tr><td colspan="3"><span class="doc-rot">Local:</span> ${esc(ab.local)}<br><span class="doc-rot">Coordenadas da abordagem:</span> ${esc(coords(ab))}<br>
+        <span class="doc-rot">Veículo:</span> ${esc(descVeiculo(ab.veiculo || {}))}</td></tr></table>
+    ${(ab.fotos || []).map((x, i) => `<div class="doc-foto"><img src="${esc(x.img)}" alt="Foto ${i + 1}">
+      <p class="doc-texto"><b>Foto ${i + 1}.</b> ${esc(x.legenda)}<br><span class="doc-rot">${esc(fotoInfo(x))}</span></p></div>`).join('')}
+    ${agente(cfg, 'POLICIAL MILITAR RESPONSÁVEL PELAS FOTOS')}
   </div>`;
 }
 
@@ -135,6 +154,7 @@ function historicoBO(ab, r) {
     + (r.motivos.filter(m => m.nivel === 'vermelho' && !m.interno).map(m => m.texto).join(' ') || 'Não foi constatada irregularidade.')
     + (crimes ? ` Os fatos, em tese, configuram: ${crimes}.` : '')
     + (ab.apreensao ? ` O veículo foi apreendido, avaliado em ${reais(ab.apreensao.valor)}.` : '')
+    + (nFotos(ab) ? ` Foram feitas ${plural(nFotos(ab))} (relatório fotográfico anexo).` : '')
     + (ab.obs ? ` ${ab.obs}` : '');
 }
 
@@ -152,6 +172,7 @@ function pendenciasDe(ab, r) {
   if ((ab.apreensao || ab.notificacao) && !(p.rg && p.endereco && p.municipio)) add('qualificacao', 'Qualificação incompleta (RG, endereço, município).');
   if (r.motivos.some(m => ['D05', 'D04', 'D06', 'D03'].includes(m.regra) && m.nivel === 'vermelho') && !ab.dano?.areaM2) add('area', 'Informar a área atingida (m²).');
   if (r.motivos.some(m => m.regra === 'D22' || m.regra === 'D03')) add('laudo', 'Pedir laudo (estágio sucessional ou alteração do local).');
+  if (r.motivos.some(m => m.nivel === 'vermelho') && !nFotos(ab)) add('fotos', 'Sem fotos do fato.');
   return out;
 }
 
@@ -163,5 +184,5 @@ function lembreteBackup(ultimo, hoje, temDados) {
   return dias > 7 ? `O último backup tem ${dias} dias. Faça um backup.` : null;
 }
 
-globalThis.Docs = { NOTIF_ABERTURA, DESTINOS, descVeiculo, motivoSugerido, notificacao, termoApreensao, autoConstatacao, historicoBO, pendenciasDe, lembreteBackup };
+globalThis.Docs = { NOTIF_ABERTURA, DESTINOS, descVeiculo, motivoSugerido, notificacao, termoApreensao, autoConstatacao, historicoBO, pendenciasDe, lembreteBackup, relatorioFotografico, fotoInfo };
 })();

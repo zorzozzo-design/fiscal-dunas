@@ -1,6 +1,6 @@
-// conteudo: bf564b70674b
-const CACHE = 'fdunas-v4';
-const ARQUIVOS = ['./', 'index.html', 'app.js', 'normas.js', 'docs.js', 'style.css', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
+// conteudo: 8746702d2d27
+const CACHE = 'fdunas-v6';
+const ARQUIVOS = ['./', 'index.html', 'app.js', 'normas.js', 'docs.js', 'fotos.js', 'style.css', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 // Instala a versão nova baixando tudo do servidor (cache:'reload' ignora a cópia antiga do navegador).
 self.addEventListener('install', e => e.waitUntil(caches.open(CACHE)

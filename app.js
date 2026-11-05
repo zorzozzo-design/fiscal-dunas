@@ -1,5 +1,6 @@
 const { FEICOES, areasDoPonto, checar, rito, crimesDe, agravantes, basesApreensao, CRIMES, GUIA } = window.Normas;
-const { NOTIF_ABERTURA, DESTINOS, descVeiculo, motivoSugerido, notificacao, termoApreensao, autoConstatacao, historicoBO, pendenciasDe, lembreteBackup } = window.Docs;
+const { NOTIF_ABERTURA, DESTINOS, descVeiculo, motivoSugerido, notificacao, termoApreensao, autoConstatacao, historicoBO, pendenciasDe, lembreteBackup, relatorioFotografico, fotoInfo } = window.Docs;
+const { lerExif } = window.Fotos;
 
 // ---------- utilitários ----------
 const $ = s => document.querySelector(s);
@@ -181,8 +182,19 @@ function novaAbordagem() {
     veiculo: { tipo: TIPOS_VEICULO[0], placa: '', chassi: '', marca: '', modelo: '', cor: '', ano: '', registro: 'Não verificado', semPlaca: false, alterado: false, posseIlicita: false },
     condutor: { cnhSit: 'Não verificada', cnhCat: '' }, proprietario: { mesmo: true, entregouDirecao: false },
     dano: { vegetacao: 'Nenhuma', estagio: '', areaM2: null }, condutas: {}, reincidencia: '',
-    providencias: [], apreensao: null, notificacao: null, fatos: '', atenuantes: '', obs: '', recusaAssinatura: false, resolvidas: [] };
+    providencias: [], apreensao: null, notificacao: null, fatos: '', atenuantes: '', obs: '', recusaAssinatura: false, resolvidas: [], fotos: [] };
 }
+
+// Foto reduzida a 1600 px em JPEG (o navegador já aplica a orientação do EXIF).
+async function reduzir(file) {
+  const bmp = await createImageBitmap(file), k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+  const c = Object.assign(document.createElement('canvas'), { width: Math.round(bmp.width * k), height: Math.round(bmp.height * k) });
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height); bmp.close?.();
+  return c.toDataURL('image/jpeg', 0.8);
+}
+const posicao = () => new Promise(ok => navigator.geolocation ? navigator.geolocation.getCurrentPosition(
+  p => ok({ lat: p.coords.latitude, lon: p.coords.longitude, precisaoM: Math.round(p.coords.accuracy) }), () => ok(null),
+  { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }) : ok(null));
 
 function imprimir(html) {
   let d = $('#impressao');
@@ -198,6 +210,7 @@ function telaAbordagem(id) {
   const ex = db.abordagens[id];
   if (id !== 'novo' && !ex) { app.innerHTML = '<div class="card"><p>Abordagem não encontrada.</p><p><a href="#/">Voltar</a></p></div>'; return; }
   const A = ex ? structuredClone(ex) : novaAbordagem();
+  A.fotos ??= [];
   let alterado = false;
   app.innerHTML = `<form id="fa" autocomplete="off">
     <div class="card"><p class="peq"><a href="#/">← Abordagens</a></p><h1>${ex ? 'Abordagem' : 'Nova abordagem'}</h1>
@@ -232,11 +245,15 @@ function telaAbordagem(id) {
       <div data-senao="proprietario.mesmo">${pessoaCampos('proprietario')}</div>
       ${chk('proprietario.entregouDirecao', 'Alguém entregou a direção ao condutor (art. 310)')}</div>
 
-    <div class="card"><h2>4. Dano</h2><div class="grade">${sel('dano.vegetacao', 'Vegetação atingida', VEGETACAO)}${sel('dano.estagio', 'Estágio de regeneração', ESTAGIOS)}
+    <div class="card"><h2>4. Dano e fotos</h2><div class="grade">${sel('dano.vegetacao', 'Vegetação atingida', VEGETACAO)}${sel('dano.estagio', 'Estágio de regeneração', ESTAGIOS)}
       ${nume('dano.areaM2', 'Área atingida (m²)')}</div>
       ${chk('dano.sulcos', 'Sulcos, rampas ou cortes na duna')}${chk('dano.reiterada', 'Trilha usada de forma reiterada (solo nu)')}
       ${chk('dano.tocaNinho', 'Toca, ninho ou abrigo destruído')}<div data-se="dano.tocaNinho" class="grade">${txt('dano.especie', 'Espécie')}<div>${chk('dano.ameacada', 'Espécie ameaçada')}</div></div>
-      ${chk('dano.areia', 'Extração de areia')}<div data-se="dano.areia" class="grade">${nume('dano.areiaM3', 'Volume (m³)')}</div></div>
+      ${chk('dano.areia', 'Extração de areia')}<div data-se="dano.areia" class="grade">${nume('dano.areiaM3', 'Volume (m³)')}</div>
+      <h2 class="sec-tit">Fotos</h2><div id="fotos" class="fotos"></div>
+      <div class="linha"><label class="btn sec" for="f-cam">Tirar foto</label><input id="f-cam" type="file" accept="image/*" capture="environment" hidden>
+        <label class="btn sec" for="f-gal">Da galeria</label><input id="f-gal" type="file" accept="image/*" multiple hidden></div>
+      <p class="muted peq">Hora e coordenadas vêm do arquivo da foto. Foto tirada pelo app sem GPS no arquivo recebe o GPS do aparelho; foto da galeria sem GPS fica sem coordenadas.</p></div>
 
     <div class="card"><h2>5. Condutas</h2>
       ${chk('condutas.embriaguez', 'Sinais de embriaguez')}${chk('condutas.recusaTeste', 'Recusa ao teste de alcoolemia')}
@@ -267,6 +284,7 @@ function telaAbordagem(id) {
       <label>Observações</label><textarea data-k="obs" rows="2"></textarea>
       <div class="linha" style="margin-top:10px"><button class="sec" type="button" data-doc="notificacao">Notificação</button>
         <button class="sec" type="button" data-doc="termo">Termo de apreensão</button><button class="sec" type="button" data-doc="auto">Auto de Constatação</button>
+        <button class="sec" type="button" data-doc="fotos">Relatório fotográfico</button>
         <button class="sec" type="button" id="b-copiar">Copiar histórico</button></div>
       <p class="muted peq">No celular, "Imprimir" permite salvar como PDF. Preencha antes o agente e os logos em Dados.</p>
       ${ex ? '<details><summary>Apagar abordagem</summary><p><button type="button" id="b-apagar" class="perigo">Apagar esta abordagem</button></p></details>' : ''}</div>
@@ -322,6 +340,10 @@ function telaAbordagem(id) {
     } else if (el.dataset.prov) {
       A.providencias = el.checked ? [...A.providencias, { tipo: el.dataset.prov, numero: '' }] : A.providencias.filter(p => p.tipo !== el.dataset.prov);
       provs();
+    } else if (el.dataset.leg) {
+      A.fotos.find(x => x.id === el.dataset.leg).legenda = el.value;
+    } else if (el.type === 'file') {
+      return;
     } else if (el.dataset.provn) {
       A.providencias.find(p => p.tipo === el.dataset.provn).numero = el.value;
     } else if (el.id === 'ap-on') {
@@ -349,6 +371,33 @@ function telaAbordagem(id) {
     const areas = areasDoPonto(A.gps);
     $('#gps').innerHTML = `${A.gps.lat.toFixed(5)}, ${A.gps.lon.toFixed(5)} (±${A.gps.precisaoM ?? '?'} m)${areas.map(a => `<br><b>${esc(a)}</b>`).join('')}`;
   };
+  const fotos = () => {
+    $('#fotos').innerHTML = A.fotos.map((x, i) => `<div class="foto"><img src="${esc(x.img)}" alt="Foto ${i + 1}">
+      <div><b>Foto ${i + 1}</b> <span class="muted peq">${esc(fotoInfo(x))}</span>
+        <input data-leg="${x.id}" placeholder="Legenda: o que a foto mostra" value="${esc(x.legenda)}">
+        <button type="button" class="sec" data-rmfoto="${x.id}">Remover</button></div></div>`).join('');
+  };
+  // Coordenada: a do EXIF; sem ela, a do aparelho só para foto tirada agora pelo app.
+  const addFotos = async (files, camera) => {
+    let pos;
+    for (const file of files) {
+      const e = lerExif(await file.arrayBuffer());
+      let gps = null, origem = '';
+      if (e.lat != null) { gps = { lat: e.lat, lon: e.lon }; origem = 'exif'; }
+      else if (camera) { if (pos === undefined) pos = await posicao(); if (pos) { gps = pos; origem = 'aparelho'; } }
+      A.fotos.push({ id: novoId(), img: await reduzir(file), legenda: '', data: e.data || (camera ? agoraLocal() : ''), gps, origem });
+    }
+    alterado = true; fotos(); desenhar();
+  };
+  for (const [id, camera] of [['#f-cam', true], ['#f-gal', false]]) $(id).onchange = async e => {
+    const fs = [...e.target.files]; e.target.value = '';
+    if (fs.length) try { await ocupado(() => addFotos(fs, camera), 'Processando as fotos'); } catch { aviso('Não foi possível ler a foto.', 'erro'); }
+  };
+  $('#fotos').onclick = e => {
+    const id = e.target.dataset.rmfoto;
+    if (!id || !confirm('Remover esta foto?')) return;
+    A.fotos = A.fotos.filter(x => x.id !== id); alterado = true; fotos(); desenhar();
+  };
   $('#b-fatos').onclick = () => {
     if (A.fatos && !confirm('Substituir o texto atual?')) return;
     A.fatos = historicoBO({ ...A, fatos: '' }, calcular(A)); alterado = true; preencher();
@@ -360,6 +409,7 @@ function telaAbordagem(id) {
     const r = calcular(A), t = b.dataset.doc;
     if (t === 'notificacao') return A.notificacao ? imprimir(notificacao(A, db.cfg)) : aviso('Marque "Notificar o condutor".', 'erro');
     if (t === 'auto') return imprimir(autoConstatacao(A, db.cfg, r));
+    if (t === 'fotos') return A.fotos.length ? imprimir(relatorioFotografico(A, db.cfg)) : aviso('Nenhuma foto nesta abordagem.', 'erro');
     // D10 e D14: o termo exige base válida e valor de avaliação.
     if (!A.apreensao) return aviso('Marque "Apreender".', 'erro');
     const base = r.bases.find(x => x.base === A.apreensao.base);
@@ -391,7 +441,7 @@ function telaAbordagem(id) {
   salvarPendente = () => alterado && gravar();
   // Sair sem salvar: pergunta (dados de campo não podem se perder).
   sairSemSalvar = () => alterado && !confirm('Há alterações não salvas. Sair mesmo assim?');
-  provs(); preencher(); verGps(); desenhar();
+  provs(); preencher(); verGps(); fotos(); desenhar();
 }
 let sairSemSalvar = () => false, salvarPendente = () => {};
 

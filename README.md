@@ -12,13 +12,13 @@ Os dados ficam só no aparelho, criptografados com a senha (AES-GCM, chave PBKDF
    1. **Local:** via ou fora de via, ambiente (duna frontal, campo de dunas móveis, banhado, restinga...), vegetação fixadora, distância da preamar e da lagoa, UC, terreno de marinha, área privada. O GPS avisa quando o ponto está no corredor eólico dos Lençóis Cidreirenses.
    2. **Veículo:** tipo, placa, chassi, registro. Placa ou chassi já abordados aparecem como histórico (uso reiterado).
    3. **Condutor e proprietário:** qualificação, CNH, quem entregou a direção.
-   4. **Dano:** vegetação, estágio, área em m², sulcos, trilha reiterada, toca ou ninho, extração de areia.
+   4. **Dano e fotos:** vegetação, estágio, área em m², sulcos, trilha reiterada, toca ou ninho, extração de areia. Fotos pela câmera ou da galeria, com legenda. Hora e coordenadas vêm do EXIF da foto; foto tirada pelo app sem GPS no arquivo recebe o GPS do aparelho; foto da galeria sem GPS fica sem coordenadas. Cada foto é reduzida a 1600 px e fica criptografada na abordagem (e no backup).
    5. **Condutas:** embriaguez, manobras, racha, fuga, evento organizado, reincidência.
    6. **Medidas:** providências com número, apreensão (com a base escolhida, o valor de avaliação e o fiel depositário) e notificação.
    7. **Fatos e documentos:** o texto do histórico é gerado pelo enquadramento e pode ser editado.
 
    O painel recalcula a cada campo: regras D01 a D27, crime e infração sugeridos, rito pela soma das penas máximas, agravantes e pendências. **O painel indica, não autua.** O Termo de Apreensão só sai com base válida e valor de avaliação (D10 e D14).
-4. **Documentos:** Notificação Ambiental, Termo de Apreensão e Fiel Depositário, Auto de Constatação (Dec. RS 55.374/2020, art. 119) e cópia do histórico para o BO/TC. No celular, "Imprimir" permite salvar em PDF.
+4. **Documentos:** Notificação Ambiental, Termo de Apreensão e Fiel Depositário, Auto de Constatação (Dec. RS 55.374/2020, art. 119), Relatório Fotográfico (legenda, hora, coordenadas e origem da coordenada de cada foto) e cópia do histórico para o BO/TC. O Auto e o histórico citam o relatório quando há fotos. No celular, "Imprimir" permite salvar em PDF.
 5. **Guia:** resumo da base legal para consulta sem internet (útil para colegas de reforço).
 6. **Backup:** exportar ou enviar para a nuvem; importar em outro aparelho com a senha de origem. As abordagens são mescladas, e vale a edição mais recente.
 
@@ -47,6 +47,5 @@ Base legal e regras no documento do projeto ("Fiscal Dunas: base legal e regras 
 
 ## Próximas fases
 
-- Fotos georreferenciadas dentro da abordagem (relatório fotográfico).
 - Camadas offline: linha de preamar, faixas de lagoa, dunas frontais (FEPAM/GERCO) e limites de UC.
 - Normas municipais de trânsito na orla, quando localizadas.

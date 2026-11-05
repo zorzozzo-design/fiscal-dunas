@@ -222,6 +222,8 @@ nav[hidden] { display: none; }
 .doc-assin { height: 30px; font-style: italic; font-size: 8pt; }
 .doc-motivo div { min-height: 220px; padding-top: 4px; }
 .doc-aviso { text-align: center; font-weight: 700; font-size: 10.5pt; padding: 8px; border-top: 1px solid #000; }
+.doc-foto { border-top: 1px solid #000; break-inside: avoid; page-break-inside: avoid; }
+.doc-foto img { display: block; max-width: 100%; max-height: 100mm; margin: 6px auto; }
 .doc-vias { text-align: center; font-size: 8pt; padding: 4px; border-top: 1px solid #000; }
 .sem-norma { font-size: .78rem; opacity: .85; }
 .sem-multa { margin-top: 8px; font-size: .85rem; font-weight: 600; }
@@ -263,6 +265,10 @@ details.local p { margin: 4px 0; }
 .faixa.vigente { color: var(--aviso); background: var(--aviso-bg); border-left: 4px solid var(--aviso); }
 .faixa .peq { color: inherit; opacity: .85; }
 .colar { margin: 6px 0 10px; }
+.fotos { display: grid; gap: 10px; margin: 6px 0; }
+.foto { display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: start; }
+.foto img { width: 96px; height: 96px; object-fit: cover; border-radius: 8px; }
+.foto input { margin: 4px 0; }
 .provs { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; }
 .prov { display: grid; gap: 2px; align-content: start; }
 .prov .chk { margin: 6px 0; }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import '../normas.js';
 import '../docs.js';
 const { checar, rito, crimesDe, agravantes } = globalThis.Normas;
-const { notificacao, termoApreensao, autoConstatacao, historicoBO, pendenciasDe, motivoSugerido, NOTIF_ABERTURA, lembreteBackup } = globalThis.Docs;
+const { notificacao, termoApreensao, autoConstatacao, historicoBO, pendenciasDe, motivoSugerido, NOTIF_ABERTURA, lembreteBackup, relatorioFotografico } = globalThis.Docs;
 
 const ab = {
   data: '2026-11-08T16:20', municipio: 'Cidreira', local: 'Lençóis Cidreirenses, margem da Lagoa da Fortaleza', gps: { lat: -30.12, lon: -50.2 },
@@ -48,8 +48,25 @@ test('histórico do BO cita o crime e a apreensão', () => {
 
 test('pendências', () => {
   const ks = pendenciasDe(ab, r).map(p => p.chave);
-  assert.deepEqual(ks, ['num:BO/TC', 'ap-valor', 'ap-destino', 'qualificacao']);
+  assert.deepEqual(ks, ['num:BO/TC', 'ap-valor', 'ap-destino', 'qualificacao', 'fotos']);
   assert.ok(pendenciasDe({ ...ab, resolvidas: ['qualificacao'] }, r).every(p => p.chave !== 'qualificacao'));
+  assert.ok(pendenciasDe({ ...ab, fotos: [foto] }, r).every(p => p.chave !== 'fotos'));
+});
+
+const foto = { id: 'f1', img: 'data:image/jpeg;base64,AAAA', legenda: 'Sulcos na duna frontal', data: '2026-11-08T16:22', gps: { lat: -30.12, lon: -50.2 }, origem: 'exif' };
+test('relatório fotográfico: legenda, hora, coordenadas e origem', () => {
+  const h = relatorioFotografico({ ...ab, fotos: [foto, { ...foto, id: 'f2', legenda: '', data: '', gps: null, origem: '' }] }, cfg);
+  assert.ok(h.includes('RELATÓRIO FOTOGRÁFICO'));
+  assert.ok(h.includes('Foto 1.') && h.includes('Sulcos na duna frontal'));
+  assert.ok(h.includes('08/11/2026 16:22') && h.includes('-30,12000, -50,20000') && h.includes('GPS gravado na foto'));
+  assert.ok(h.includes('Foto 2.') && h.includes('sem coordenadas') && h.includes('data não registrada'));
+});
+
+test('auto e histórico citam o relatório fotográfico', () => {
+  const com = { ...ab, fotos: [foto, foto] };
+  assert.ok(autoConstatacao(com, cfg, r).includes('relatório fotográfico com 2 fotos'));
+  assert.match(historicoBO(com, r), /2 fotos \(relatório fotográfico anexo\)/);
+  assert.ok(!autoConstatacao(ab, cfg, r).includes('relatório fotográfico'));
 });
 
 test('motivo sugerido usa os vermelhos', () => assert.match(motivoSugerido(motivos), /fixadora/));
