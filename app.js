@@ -1,4 +1,4 @@
-const { FEICOES, areasDoPonto, checar, rito, crimesDe, agravantes, basesApreensao, CRIMES, GUIA } = window.Normas;
+const { FEICOES, areasDoPonto, checar, rito, crimesDe, agravantes, basesApreensao, CRIMES, GUIA, METODOS_PREAMAR } = window.Normas;
 const { NOTIF_ABERTURA, DESTINOS, descVeiculo, motivoSugerido, notificacao, termoApreensao, autoConstatacao, historicoBO, pendenciasDe, lembreteBackup, relatorioFotografico, fotoInfo } = window.Docs;
 const { lerExif } = window.Fotos;
 const { lerCamada, consultar } = window.Camadas;
@@ -240,7 +240,7 @@ function telaAbordagem(id) {
       ${chk('lugar.via', '<b>Via:</b> praia aberta à circulação, rua, estrada ou caminho aberto ao público')}
       <label>Ambiente</label><div class="chips">${FEICOES.map(f => `<label class="chk chip-chk"><input type="checkbox" data-arr="lugar.feicoes" value="${esc(f)}"> ${esc(f)}</label>`).join('')}</div>
       ${chk('lugar.fixadora', 'A vegetação atingida <b>fixa duna</b>')}
-      <div class="grade">${nume('lugar.distPreamarM', 'Distância da preamar máxima (m)')}${nume('lugar.lagoa.distM', 'Distância da lagoa (m)')}
+      <div class="grade">${nume('lugar.distPreamarM', 'Distância da preamar máxima (m)')}${sel('lugar.distMetodo', 'Como foi medida', METODOS_PREAMAR)}${nume('lugar.lagoa.distM', 'Distância da lagoa (m)')}
         ${sel('lugar.lagoa.zona', 'Zona da lagoa', ['rural', 'urbana'])}</div>
       ${chk('lugar.lagoa.ate20ha', 'Lagoa com até 20 ha (faixa de 50 m em zona rural)')}
       <div class="grade">${sel('lugar.uc', 'Unidade de Conservação', UCS, { '': 'Não', federal: 'Federal', estadual: 'Estadual', municipal: 'Municipal' })}

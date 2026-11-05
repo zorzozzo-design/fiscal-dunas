@@ -69,6 +69,15 @@ test('auto e histórico citam o relatório fotográfico', () => {
   assert.ok(!autoConstatacao(ab, cfg, r).includes('relatório fotográfico'));
 });
 
+test('auto e pendência: como a distância da preamar foi medida', () => {
+  const l = { via: false, feicoes: ['Restinga'], distPreamarM: 120 };
+  const sem = { ...ab, lugar: l }, rs = { motivos: checar(sem), crimes: [], rito: rito([]), agravantes: [] };
+  assert.ok(pendenciasDe(sem, rs).some(p => p.chave === 'medicao'));
+  const com = { ...ab, lugar: { ...l, distMetodo: 'Trena' } };
+  assert.ok(!pendenciasDe(com, rs).some(p => p.chave === 'medicao'));
+  assert.ok(autoConstatacao(com, cfg, rs).includes('Distância da linha de preamar máxima: 120 m (medição: trena)'));
+});
+
 test('motivo sugerido usa os vermelhos', () => assert.match(motivoSugerido(motivos), /fixadora/));
 test('lembrete de backup', () => {
   assert.equal(lembreteBackup(null, '2026-11-04', false), null);

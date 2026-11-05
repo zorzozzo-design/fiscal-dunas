@@ -34,6 +34,19 @@ test('D04: restinga é APP até 300 m da preamar', () => {
   assert.ok(tem(ab({ lugar: { feicoes: ['Restinga'], distPreamarM: 120 }, dano: { vegetacao: 'Herbácea' } }), 'D04'));
 });
 
+test('D04: duna frontal e campo de dunas até 300 m também são restinga (Res. 303, art. 2º, VIII)', () => {
+  assert.equal(classificar({ feicoes: ['Duna frontal'], distPreamarM: 150 }).app[0][0], 'D04');
+  assert.equal(classificar({ feicoes: ['Campo de dunas móveis'], distPreamarM: 300 }).app[0][0], 'D04');
+  assert.equal(classificar({ feicoes: ['Banhado'], distPreamarM: 100 }).app.map(a => a[0]).join(), 'D03', 'banhado segue a regra própria');
+});
+
+test('D04: distância estimada gera aviso; o dano em APP dos 300 m traz a dica do precedente', () => {
+  const l = { feicoes: ['Restinga'], distPreamarM: 120 };
+  assert.equal(de(ab({ lugar: { ...l, distMetodo: 'Estimativa' } }), 'D04').find(m => m.interno)?.nivel, 'amarelo');
+  assert.ok(!de(ab({ lugar: { ...l, distMetodo: 'Trena' } }), 'D04').some(m => m.interno));
+  assert.match(de(ab({ lugar: l, dano: { vegetacao: 'Herbácea' } }), 'D04')[0].dica, /não vinculante/);
+});
+
 test('D05: vegetação fixadora danificada = art. 50 e Dec. art. 56, em qualquer distância', () => {
   const m = de(ab({ lugar: { fixadora: true, distPreamarM: 2000 }, dano: { vegetacao: 'Herbácea', areaM2: 40 } }), 'D05')[0];
   assert.equal(m.nivel, 'vermelho');
@@ -159,9 +172,10 @@ test('D21 e D22: trilha reiterada e Mata Atlântica em estágio médio', () => {
   assert.ok(!tem(ab({ dano: { vegetacao: 'Herbácea', estagio: 'Médio' } }), 'D22'));
 });
 
-test('D23: extração de areia; em duna também art. 44; em bem da União, Lei 8.176', () => {
+test('D23: extração de areia; art. 44 só em APP com floresta; em bem da União, Lei 8.176', () => {
   assert.deepEqual(de(ab({ dano: { areia: true } }), 'D23').map(m => m.crime), ['L9605-55']);
-  assert.deepEqual(de(ab({ lugar: { feicoes: ['Duna frontal'], marinha: true }, dano: { areia: true } }), 'D23').map(m => m.crime), ['L9605-55', 'L9605-44', 'L8176-2']);
+  assert.deepEqual(de(ab({ lugar: { feicoes: ['Duna frontal'], marinha: true }, dano: { areia: true } }), 'D23').map(m => m.crime), ['L9605-55', 'L8176-2']);
+  assert.deepEqual(de(ab({ lugar: { feicoes: ['Restinga'], distPreamarM: 100 }, dano: { areia: true, vegetacao: 'Arbórea' } }), 'D23').map(m => m.crime), ['L9605-55', 'L9605-44']);
 });
 
 test('D24 a D27: fuga, evento, habilitação e condutas na via', () => {

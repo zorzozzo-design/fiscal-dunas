@@ -24,6 +24,9 @@ const DEC = 'Dec. RS 55.374/2020';
 const FEICOES = ['Duna frontal', 'Campo de dunas móveis', 'Banhado', 'Capão de mata em margem de lagoa', 'Restinga', 'Faixa de praia'];
 // Lei 15.434/2020, art. 208: ambientes da Zona Costeira com uso restrito ao que garanta a conservação.
 const PROTEGIDAS = new Set(['Duna frontal', 'Campo de dunas móveis', 'Banhado', 'Capão de mata em margem de lagoa']);
+// Res. CONAMA 303/2002, art. 2º, VIII: a restinga inclui as dunas; até 300 m da preamar é APP (art. 3º, IX, a).
+const RESTINGA_300 = ['Restinga', 'Duna frontal', 'Campo de dunas móveis'];
+const METODOS_PREAMAR = ['', 'GPS e camada de preamar', 'Trena', 'Imagem de satélite', 'Estimativa'];
 const TIPOS_SEM_PLACA = new Set(['Quadriciclo', 'UTV ou ATV', 'Moto de trilha']);
 
 // Diretrizes Ambientais do Litoral Norte (SEMA/FEPAM, 2024), diretriz 1.3: corredor de alimentação eólica dos Lençóis
@@ -42,8 +45,9 @@ function classificar(lugar = {}) {
   const fs = lugar.feicoes || [], app = [];
   // [regra, motivo, norma]: a regra da APP que vale para o dano.
   if (lugar.fixadora) app.push(['D05', 'Vegetação fixadora de dunas', 'Lei 12.651/2012, art. 4º, VI']);
-  if (fs.includes('Restinga') && lugar.distPreamarM != null && lugar.distPreamarM <= 300)
-    app.push(['D04', `Restinga a ${lugar.distPreamarM} m da preamar máxima`, 'Res. CONAMA 303/2002, art. 3º, IX; STJ, REsp 1.827.303/SC']);
+  const rest = fs.find(f => RESTINGA_300.includes(f));
+  if (rest && lugar.distPreamarM != null && lugar.distPreamarM <= 300)
+    app.push(['D04', `${rest} a ${lugar.distPreamarM} m da preamar máxima`, 'Res. CONAMA 303/2002, art. 3º, IX; STJ, REsp 1.827.303/SC']);
   if (lugar.lagoa?.distM != null && lugar.lagoa.distM <= faixaLagoa(lugar.lagoa))
     app.push(['D06', `A ${lugar.lagoa.distM} m da lagoa (faixa de ${faixaLagoa(lugar.lagoa)} m)`, 'Lei 12.651/2012, art. 4º, II']);
   if (fs.includes('Banhado')) app.push(['D03', 'Banhado', 'Lei 15.434/2020, art. 144']);
@@ -94,7 +98,7 @@ function checar(ab, ctx = {}) {
   const add = (regra, nivel, texto, norma, enquadramento = '', crime = '', dica = '', interno = false) => out.push({ regra, nivel, texto, norma, enquadramento, crime, dica, interno });
   const aviso = (regra, nivel, texto, norma) => add(regra, nivel, texto, norma, '', '', '', true);
   const c = classificar(ab.lugar), d = ab.dano || {}, v = ab.veiculo || {}, k = ab.condutas || {}, cond = ab.condutor || {};
-  const ehApp = c.app.length > 0;
+  const ehApp = c.app.length > 0, ap300 = c.app.some(a => a[0] === 'D04');
   const comDano = d.vegetacao && d.vegetacao !== 'Nenhuma';
   const emUc = !!c.uc;
   const dobro = emUc ? ' (em dobro: UC, art. 108)' : '';
@@ -118,7 +122,10 @@ function checar(ab, ctx = {}) {
       dunaFrontal ? 'Dano presumido no painel: descreva a vegetação esmagada e fotografe o rastro, a materialidade precisa estar no histórico.' : 'Descreva a vegetação, fotografe e peça perícia.');
   else if (comDano && ehApp)
     add(c.app[0][0], 'vermelho', `Vegetação nativa danificada em APP (${c.app.map(a => a[1].toLowerCase()).join('; ')}).`,
-      c.app.map(a => a[2]).join('; '), `Infração: ${DEC}, art. 56 (250 a 2.500 UPF por ha ou fração)${dobro}. Crime a conferir: art. 48 ou art. 38`);
+      c.app.map(a => a[2]).join('; '), `Infração: ${DEC}, art. 56 (250 a 2.500 UPF por ha ou fração)${dobro}. Crime a conferir: art. 48 ou art. 38`, '',
+      ap300 ? 'APP dos 300 m: precedente da 2ª Turma do STJ (não vinculante). Registre a medição e a vegetação de restinga.' : '');
+  if (ap300 && ab.lugar.distMetodo === 'Estimativa')
+    aviso('D04', 'amarelo', 'Distância da preamar estimada: meça (GPS com camada, trena ou imagem) para sustentar a APP dos 300 m.', 'Res. CONAMA 303/2002, art. 3º, IX, a');
   if (d.reiterada && (ehApp || c.zonaCosteira))
     add('D21', 'amarelo', 'Trilha usada de forma reiterada, mantendo o solo nu, impedindo a regeneração natural.',
       'Lei 9.605/98, art. 48', `Infração: ${DEC}, art. 65 (250 UPF por ha ou fração)${dobro}`, 'L9605-48', 'Registre datas e imagens sucessivas do ponto: o TJRS exige prova pericial do impedimento.');
@@ -139,7 +146,8 @@ function checar(ab, ctx = {}) {
   if (d.areia) {
     add('D23', 'vermelho', `Extração de areia${d.areiaM3 ? ` (${d.areiaM3} m³)` : ''} sem autorização.`, 'Lei 9.605/98, art. 55',
       `Infração: ${DEC}, art. 78 (75 a 150 UPF por ha ou fração)${dobro}`, 'L9605-55');
-    if (ehApp || c.zonaCosteira) add('D23', 'vermelho', 'Extração de areia em APP ou duna.', 'Lei 9.605/98, art. 44', `Infração: ${DEC}, art. 64 (250 a 2.500 UPF por ha ou fração)${dobro}`, 'L9605-44');
+    // Art. 44 fala em extrair "de florestas" de preservação permanente: só com vegetação arbórea em APP.
+    if (ehApp && d.vegetacao === 'Arbórea') add('D23', 'vermelho', 'Extração de areia em APP com floresta.', 'Lei 9.605/98, art. 44', `Infração: ${DEC}, art. 64 (250 a 2.500 UPF por ha ou fração)${dobro}`, 'L9605-44');
     if (c.marinha) add('D23', 'amarelo', 'Areia retirada de possível bem da União: usurpação.', 'Lei 8.176/91, art. 2º', '', 'L8176-2');
   }
 
@@ -219,7 +227,8 @@ function basesApreensao(ab, motivos, ctx = {}) {
 // Resumo para o Guia (consulta offline).
 const GUIA = [
   ['Primeiro o local', 'Praia aberta ao público, rua ou estrada = via (CTB vale). Duna fechada, Tuia, área privada = fora de via: só a matriz ambiental e os crimes de trânsito que não exigem via (306, 310, 311).'],
-  ['APP', 'Vegetação fixadora de duna (em qualquer distância); restinga a até 300 m da preamar; faixa de lagoa: 100 m rural (50 m até 20 ha), 30 m urbana; banhado (Lei 15.434, art. 144).'],
+  ['APP', 'Vegetação fixadora de duna (em qualquer distância); restinga, incluídas as dunas, a até 300 m da preamar (Res. CONAMA 303, art. 3º, IX, a; STJ, REsp 1.827.303/SC, 2ª Turma, não vinculante); faixa de lagoa natural: 100 m rural (50 m até 20 ha), 30 m urbana; banhado (Lei 15.434, art. 144). A Res. 303 (art. 3º, XI) também faz da duna APP em qualquer lugar; o STJ ainda não tratou desse inciso. A Res. 302 vale só para reservatório artificial (açude, barragem).'],
+  ['Medir a preamar', 'A APP dos 300 m depende da distância. Registre como mediu (GPS com camada, trena ou imagem) e fotografe a linha de preamar usada como referência. Estimativa não sustenta a APP.'],
   ['Caso típico', 'Veículo esmagando vegetação fixadora: art. 50 da Lei 9.605 (TC) + Dec. 55.374, art. 56 no Auto de Constatação. Prova: fotos, área em m², GPS e descrição da vegetação.'],
   ['Rito', 'Até 2 anos de pena máxima somada: TC. Acima (ex.: arts. 38-A, 40, 63, 69, CTB 306): condução à DP.'],
   ['Recolher o veículo', 'Penal: instrumento do crime em flagrante. Administrativa: só com posse ilícita, alteração ou uso reiterado. Trânsito: só em via e com convênio.'],
@@ -228,5 +237,5 @@ const GUIA = [
   ['Sem irregularidade', 'Orientação registrada (Lei 15.434, art. 13). Ela vira prova de uso reiterado na próxima vez.'],
 ];
 
-globalThis.Normas = { CRIMES, FEICOES, TIPOS_SEM_PLACA, CORREDOR_LENCOIS, noPoligono, areasDoPonto, faixaLagoa, classificar, feriado, agravantes, idade, checar, rito, crimesDe, basesApreensao, GUIA };
+globalThis.Normas = { CRIMES, FEICOES, METODOS_PREAMAR, TIPOS_SEM_PLACA, CORREDOR_LENCOIS, noPoligono, areasDoPonto, faixaLagoa, classificar, feriado, agravantes, idade, checar, rito, crimesDe, basesApreensao, GUIA };
 })();

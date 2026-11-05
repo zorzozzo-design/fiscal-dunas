@@ -114,6 +114,7 @@ function autoConstatacao(ab, cfg, r) {
     <div class="doc-faixa">DESCRIÇÃO DOS FATOS</div>
     <p class="doc-texto">${esc(ab.fatos || historicoBO(ab, r)).replace(/\n/g, '<br>')}</p>
     ${nFotos(ab) ? `<p class="doc-texto">Anexo: relatório fotográfico com ${plural(nFotos(ab))}.</p>` : ''}
+    ${ab.lugar?.distPreamarM != null ? `<p class="doc-texto">Distância da linha de preamar máxima: ${esc(num(ab.lugar.distPreamarM))} m${ab.lugar.distMetodo ? ` (medição: ${esc(ab.lugar.distMetodo.toLowerCase())})` : ''}.</p>` : ''}
     ${d.areaM2 ? `<p class="doc-texto">Área atingida: ${esc(num(d.areaM2))} m². Vegetação: ${esc(d.vegetacao)}${d.estagio ? `, estágio ${esc(d.estagio.toLowerCase())}` : ''}.</p>` : ''}
     <div class="doc-faixa">CIRCUNSTÂNCIAS AGRAVANTES E ATENUANTES (Dec. RS 55.374/2020, art. 6º)</div>
     <p class="doc-texto">Agravantes: ${esc(r.agravantes.join('; ') || 'nenhuma identificada')}.<br>Atenuantes: ${esc(ab.atenuantes || 'nenhuma informada')}.</p>
@@ -164,6 +165,7 @@ function pendenciasDe(ab, r) {
   const out = [], feitas = new Set(ab.resolvidas || []), p = ab.condutor || {};
   const add = (k, texto) => { if (!feitas.has(k)) out.push({ chave: k, texto }); };
   if (!p.nome) add('pessoa', 'Identificar o condutor.');
+  if (globalThis.Normas.classificar(ab.lugar).app.some(a => a[0] === 'D04') && !ab.lugar.distMetodo) add('medicao', 'Informar como a distância da preamar foi medida.');
   for (const pr of ab.providencias || []) if (PEDE_NUMERO.has(pr.tipo) && !String(pr.numero || '').trim()) add(`num:${pr.tipo}`, `Falta o número (${pr.tipo}).`);
   if (r.motivos.some(m => m.nivel === 'vermelho') && !(ab.providencias || []).some(pr => ['BA', 'BO/TC', 'BO/COP', 'Auto de Constatação'].includes(pr.tipo)))
     add('sem-documento', 'Irregular sem BA, BO ou Auto de Constatação.');
