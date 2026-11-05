@@ -196,3 +196,20 @@ test('GPS no corredor eólico dos Lençóis Cidreirenses', () => {
   assert.equal(areasDoPonto({ lat: -29.98, lon: -50.13 }).length, 0);
   assert.equal(areasDoPonto(null).length, 0);
 });
+
+test('D28: praia balneária (Lei RS 9.204/1991): com placa e em via, CTB art. 187, I', () => {
+  const praia = { via: true, feicoes: ['Faixa de praia'], placaProibicao: true };
+  const m = de(ab({ lugar: praia }), 'D28', { convenio: true })[0];
+  assert.equal(m.nivel, 'vermelho');
+  assert.match(m.norma, /9\.204/);
+  assert.match(m.enquadramento, /187, I/);
+  assert.equal(m.crime, '', 'não é crime');
+  const sem = de(ab({ lugar: { ...praia, placaProibicao: false } }), 'D28', { convenio: true })[0];
+  assert.ok(sem.interno && sem.nivel === 'amarelo', 'sem placa, só orientação');
+  assert.ok(!tem(ab({ lugar: { via: true, feicoes: ['Restinga'] } }), 'D28', { convenio: true }));
+});
+
+test('D28: Cidreira libera dois trechos da orla (Lei 628/1997, art. 4º)', () => {
+  const m = de({ ...ab({ lugar: { via: true, feicoes: ['Faixa de praia'], placaProibicao: false } }), municipio: 'Cidreira' }, 'D28', { convenio: true });
+  assert.ok(m.some(x => x.interno && /Maestro Medanha/.test(x.texto)));
+});

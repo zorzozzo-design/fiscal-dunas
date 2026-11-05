@@ -1,4 +1,4 @@
-// Classificação do local e regras D01 a D27, checadas ao vivo na abordagem.
+// Classificação do local e regras D01 a D28, checadas ao vivo na abordagem.
 // Fonte de cada regra: documento "Fiscal Dunas: base legal e regras do app". Indica e sugere enquadramento, não autua.
 (() => {
 
@@ -24,6 +24,7 @@ const DEC = 'Dec. RS 55.374/2020';
 const FEICOES = ['Duna frontal', 'Campo de dunas móveis', 'Banhado', 'Capão de mata em margem de lagoa', 'Restinga', 'Faixa de praia'];
 // Lei 15.434/2020, art. 208: ambientes da Zona Costeira com uso restrito ao que garanta a conservação.
 const PROTEGIDAS = new Set(['Duna frontal', 'Campo de dunas móveis', 'Banhado', 'Capão de mata em margem de lagoa']);
+const semAcentoN = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 // Res. CONAMA 303/2002, art. 2º, VIII: a restinga inclui as dunas; até 300 m da preamar é APP (art. 3º, IX, a).
 const RESTINGA_300 = ['Restinga', 'Duna frontal', 'Campo de dunas móveis'];
 const METODOS_PREAMAR = ['', 'GPS e camada de preamar', 'Trena', 'Imagem de satélite', 'Estimativa'];
@@ -198,6 +199,16 @@ function checar(ab, ctx = {}) {
   if (ab.apreensao && !(+ab.apreensao.valor > 0))
     aviso('D14', 'amarelo', 'O Termo de Apreensão está sem o valor de avaliação. Informe o valor.', `${DEC}, art. 135, §1º`);
 
+  // D28: praia balneária. Lei RS 9.204/1991, art. 1º: veículo proibido; o município demarca e sinaliza. A lei não tem sanção própria.
+  if ((ab.lugar?.feicoes || []).includes('Faixa de praia')) {
+    if (c.via && ab.lugar.placaProibicao)
+      add('D28', 'vermelho', 'Veículo na faixa de praia, em trecho com placa de proibição de veículos.', 'Lei RS 9.204/1991, art. 1º',
+        'Infração: CTB, art. 187, I (média)', '', 'Veículo parado com placa de proibido estacionar: CTB, art. 181, XVIII.');
+    else aviso('D28', 'amarelo', 'A Lei RS 9.204/1991 proíbe veículo na praia balneária, mas exige placa do município. Sem placa, oriente e registre.', 'Lei RS 9.204/1991, art. 1º');
+    if (semAcentoN(ab.municipio) === 'cidreira')
+      aviso('D28', 'info', 'Em Cidreira, a lei libera veículo na orla da Rua Maestro Medanha (Salinas) à divisa com Tramandaí e da Av. G ao terminal turístico. Confira o trecho.', 'Lei Cidreira 628/1997, art. 4º (Lei 3.203/2024)');
+  }
+
   // D20: nada irregular.
   if (!out.some(m => m.nivel === 'vermelho')) aviso('D20', 'info', 'Nenhuma irregularidade confirmada. Registre a orientação. Se necessário, notifique.', 'Lei 15.434/2020, art. 13; CF/88, art. 225');
   return out;
@@ -229,6 +240,7 @@ function basesApreensao(ab, motivos, ctx = {}) {
 const GUIA = [
   ['Primeiro o local', 'Classifique o local primeiro. Praia aberta ao público, rua e estrada são via, e nelas o CTB vale. Duna fechada, Tuia e área privada ficam fora de via. Fora de via, use a matriz ambiental e os crimes de trânsito que não exigem via (CTB, arts. 306, 310 e 311).'],
   ['APP', 'A vegetação fixadora de duna é APP em qualquer distância (Lei 12.651, art. 4º, VI). A restinga até 300 m da preamar também é APP, incluídas as dunas (Res. CONAMA 303, art. 3º, IX, a). Esta regra vem de um precedente da 2ª Turma do STJ (REsp 1.827.303/SC), não vinculante. A faixa de lagoa natural é APP. Na zona rural, a faixa é de 100 m, ou 50 m em lagoa de até 20 ha. Na zona urbana, é de 30 m. O banhado também é protegido (Lei 15.434, art. 144). A Res. 303 (art. 3º, XI) faz da duna APP em qualquer lugar. O STJ ainda não decidiu sobre este inciso. A Res. 302 vale só para reservatório artificial, como açude ou barragem.'],
+  ['Praia', 'A Lei RS 9.204/1991 proíbe veículo na praia balneária. O município demarca e sinaliza a área. Com placa e em via, use o CTB, art. 187, I. Sem placa, oriente e registre. Em Cidreira, a Lei 628/1997 libera dois trechos da orla.'],
   ['Medir a preamar', 'A APP dos 300 m depende da distância. Registre como mediu: GPS com camada, trena ou imagem. Fotografe a linha de preamar que usou como referência. Uma estimativa não sustenta a APP.'],
   ['Caso típico', 'O veículo esmaga a vegetação fixadora. O crime é o art. 50 da Lei 9.605, com rito de TC. No Auto de Constatação, use o Dec. 55.374, art. 56. Para a prova, registre fotos, área em m², GPS e a descrição da vegetação.'],
   ['Rito', 'Some as penas máximas dos crimes. Até 2 anos, o rito é TC. Acima de 2 anos, conduza à DP. Exemplos acima de 2 anos: arts. 38-A, 40, 63 e 69 da Lei 9.605 e art. 306 do CTB.'],

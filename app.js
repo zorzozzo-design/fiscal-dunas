@@ -351,6 +351,7 @@ function telaAbordagem(rota) {
 
     <details class="card card-dobra" open><summary><h2>1. Local</h2></summary>
       ${chk('lugar.via', '<b>Via:</b> praia, rua, estrada ou caminho aberto ao público')}
+      ${chk('lugar.placaProibicao', 'Há placa de proibição de veículos no local')}
       <label>Ambiente</label><div class="chips">${FEICOES.map(f => `<label class="chk chip-chk"><input type="checkbox" data-arr="lugar.feicoes" value="${esc(f)}"> ${esc(f)}</label>`).join('')}</div>
       ${chk('lugar.fixadora', 'A vegetação atingida <b>fixa duna</b>')}
       <div class="grade">${nume('lugar.distPreamarM', 'Distância da preamar máxima (m)')}${sel('lugar.distMetodo', 'Como foi medida', METODOS_PREAMAR)}${nume('lugar.lagoa.distM', 'Distância da lagoa (m)')}

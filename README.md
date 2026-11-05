@@ -21,7 +21,7 @@ Os textos de tela, do painel e do Guia seguem o ASD-STE100, adaptado ao portugu�
    6. **Medidas:** providências com número, apreensão e notificação. Na apreensão, escolha a base, informe o valor de avaliação e o fiel depositário.
    7. **Fatos e documentos:** o app gera o texto do histórico pelo enquadramento. Edite o texto se necessário.
 
-   O painel recalcula a cada campo: regras D01 a D27, crime e infração sugeridos, rito, agravantes e pendências. **O painel indica, mas não autua.** O Termo de Apreensão só sai com base válida e valor de avaliação (D10 e D14).
+   O painel recalcula a cada campo: regras D01 a D28, crime e infração sugeridos, rito, agravantes e pendências. **O painel indica, mas não autua.** O Termo de Apreensão só sai com base válida e valor de avaliação (D10 e D14).
 4. **Documentos:** Notificação Ambiental, Termo de Apreensão e Fiel Depositário, Auto de Constatação (Dec. RS 55.374/2020, art. 119), Relatório Fotográfico e cópia do histórico para o BO/TC. Com fotos, o Auto e o histórico citam o relatório. Para salvar em PDF, toque em "Imprimir".
 5. **Denúncias:** aba ao lado de Abordagens. Registre data, situação, tipo, origem, local e relato. Cole a mensagem do WhatsApp no relato. Anexe fotos e vídeos (vídeo até 50 MB). Para ir ao local, toque em **Nova abordagem desta denúncia**: a abordagem já vem com município, local e placa. A denúncia mostra as abordagens ligadas a ela e as abordagens com a mesma placa. Use a busca para achar uma denúncia por local, placa, pessoa ou relato. O backup leva as denúncias e, se marcado, os anexos.
 6. **Guia:** resumo da base legal para consulta sem internet.
@@ -43,6 +43,7 @@ Base legal e regras no documento do projeto ("Fiscal Dunas: base legal e regras 
 | D16 a D19 | Embriaguez, menor e art. 310, veículo sem placa, toca ou ninho |
 | D20 | Sem irregularidade: orientação |
 | D21 a D27 | Trilha reiterada (art. 48), Mata Atlântica (art. 38-A), extração de areia, fuga, evento, habilitação, condutas na via |
+| D28 | Praia balneária (Lei RS 9.204/1991): com placa e em via, CTB art. 187, I; sem placa, orientação; trechos liberados em Cidreira |
 
 ## Desenvolvimento
 
@@ -53,4 +54,4 @@ Base legal e regras no documento do projeto ("Fiscal Dunas: base legal e regras 
 ## Próximas fases
 
 - Obter os arquivos oficiais das camadas (FEPAM/GERCO, ICMBio, SEMA) e deixar um pacote pronto do Litoral Norte para importar.
-- Normas municipais de trânsito na orla, quando localizadas.
+- Leis municipais de orla de Tramandaí, Imbé, Xangri-lá, Arroio do Sal e Balneário Pinhal: não localizadas; hoje vale a Lei RS 9.204/1991.
