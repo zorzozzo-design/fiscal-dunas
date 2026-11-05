@@ -15,7 +15,7 @@ const CRIMES = {
   'L9605-69': ['Lei 9.605/98, art. 69 (obstar ou dificultar a fiscalização)', 36],
   'L8176-2': ['Lei 8.176/91, art. 2º (usurpação de bem da União)', 60],
   'CTB-306': ['CTB, art. 306 (embriaguez ao volante)', 36],
-  'CTB-308': ['CTB, art. 308 (racha em via pública)', 36],
+  'CTB-308': ['CTB, art. 308 (racha ou manobra de perícia com risco)', 36],
   'CTB-309': ['CTB, art. 309 (dirigir sem habilitação gerando perigo de dano)', 12],
   'CTB-310': ['CTB, art. 310 (entregar a direção a não habilitado)', 12],
   'CTB-311': ['CTB, art. 311 (velocidade incompatível onde há concentração de pessoas)', 12],
@@ -24,6 +24,7 @@ const DEC = 'Dec. RS 55.374/2020';
 const FEICOES = ['Duna frontal', 'Campo de dunas móveis', 'Banhado', 'Capão de mata em margem de lagoa', 'Restinga', 'Faixa de praia'];
 // Lei 15.434/2020, art. 208: ambientes da Zona Costeira com uso restrito ao que garanta a conservação.
 const PROTEGIDAS = new Set(['Duna frontal', 'Campo de dunas móveis', 'Banhado', 'Capão de mata em margem de lagoa']);
+const ORIENTACAO = 'Orientação 002/2ª Cia/1º BPAmb/2025';
 const semAcentoN = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 // Res. CONAMA 303/2002, art. 2º, VIII: a restinga inclui as dunas; até 300 m da preamar é APP (art. 3º, IX, a).
 const RESTINGA_300 = ['Restinga', 'Duna frontal', 'Campo de dunas móveis'];
@@ -105,8 +106,10 @@ function checar(ab, ctx = {}) {
   const dobro = emUc ? ' (em dobro: UC, art. 108)' : '';
 
   // D01 e D02: a matriz de trânsito administrativa só vale em via e com convênio.
-  if (c.via && !ctx.convenio) aviso('D02', 'amarelo', 'Este município está sem convênio de trânsito. Não lavre AIT. Registre o fato e chame o órgão de trânsito.', 'CTB, art. 23, III');
-  if (!c.via) aviso('D01', 'info', 'Fora de via, o CTB não tem infração administrativa. Use a matriz ambiental e os crimes que não exigem via pública.', 'CTB, arts. 1º e 2º');
+  // A Orientação 002/2025 também manda lavrar AIT na faixa de areia e na duna com dano: o convênio vale ali também.
+  const fsD02 = ab.lugar?.feicoes || [];
+  if ((c.via || fsD02.includes('Faixa de praia') || fsD02.includes('Duna frontal') || ab.lugar?.fixadora) && !ctx.convenio) aviso('D02', 'amarelo', 'Este município está sem convênio de trânsito. Não lavre AIT. Registre o fato e chame o órgão de trânsito.', 'CTB, art. 23, III');
+  if (!c.via) aviso('D01', 'info', 'Fora de via, o CTB em regra não tem infração administrativa. Exceções da 2ª Cia: faixa de areia (D28) e duna com dano (D05).', 'CTB, arts. 1º e 2º');
 
   // D03: duna frontal, campo de dunas móveis, banhado ou capão de mata (Zona Costeira).
   if (c.zonaCosteira && d.sulcos)
@@ -120,8 +123,9 @@ function checar(ab, ctx = {}) {
   if (dunaFrontal || (comDano && ab.lugar?.fixadora))
     // O documento só afirma o dano depois que o agente marca a vegetação atingida.
     add('D05', 'vermelho', dunaFrontal ? `Veículo sobre duna frontal, na faixa da preamar${comDano ? `, danificando a vegetação fixadora${area}` : ''}.` : `Vegetação fixadora de dunas danificada${area}.`,
-      'Lei 12.651/2012, art. 4º, VI', `Infração: ${DEC}, art. 56 (250 a 2.500 UPF por ha ou fração)${dobro}`, 'L9605-50',
-      dunaFrontal ? 'O painel presume o dano. Marque a vegetação atingida. Descreva no histórico a vegetação esmagada. Fotografe o rastro.' : 'Descreva a vegetação. Fotografe o dano. Peça perícia.');
+      'Lei 12.651/2012, art. 4º, VI', `Infração: ${DEC}, art. 56 (250 a 2.500 UPF por ha ou fração)${dobro}. AIT: CTB, art. 181, VIII (cód. 54524, grave; remoção se o condutor não estiver), conforme a ${ORIENTACAO}`, 'L9605-50',
+      (dunaFrontal ? 'O painel presume o dano. Marque a vegetação atingida. Descreva no histórico a vegetação esmagada. Fotografe o rastro.' : 'Descreva a vegetação. Fotografe o dano. Peça perícia.')
+      + ' Para recolher, chame o Detran/RS (0800 906 6006). Sem recolhimento, o condutor fica como fiel depositário.');
   else if (comDano && ehApp)
     add(c.app[0][0], 'vermelho', `Vegetação nativa danificada em APP (${c.app.map(a => a[1].toLowerCase()).join('; ')}).`,
       c.app.map(a => a[2]).join('; '), `Infração: ${DEC}, art. 56 (250 a 2.500 UPF por ha ou fração)${dobro}. Crime a conferir: art. 48 ou art. 38`, '',
@@ -182,15 +186,19 @@ function checar(ab, ctx = {}) {
   // D18: veículo sem placa ou sem licenciamento.
   if (v.semPlaca || ['Sem registro', 'Não licenciado'].includes(v.registro)) {
     if (c.via) add('D18', 'vermelho', v.semPlaca ? 'Veículo sem placa em via.' : `Veículo ${v.registro.toLowerCase()} em via.`,
-      v.semPlaca ? 'CTB, art. 230, IV' : 'CTB, art. 230, V', 'Infração: gravíssima; remoção do veículo');
+      v.semPlaca ? 'CTB, art. 230, IV' : 'CTB, art. 230, V', 'Infração: gravíssima; remoção do veículo', '',
+      v.semPlaca ? 'No Talonário, use "Novo Auto Sem Placa". Lance chassi, cor, marca e modelo.' : '');
     else aviso('D18', 'info', `Veículo ${v.semPlaca ? 'sem placa' : v.registro.toLowerCase()} fora de via. Só registre o fato.${TIPOS_SEM_PLACA.has(v.tipo) ? ' A Res. CONTRAN 1.023/2026 não autoriza este veículo em duna.' : ''}`, 'CTB, art. 1º');
   }
   if (c.via) {
     if (k.semCapacete) add('D27', 'vermelho', 'Sem capacete.', 'CTB, art. 244, I', 'Infração: gravíssima, suspensão; retenção');
-    if (k.manobra) add('D27', 'vermelho', 'Manobra perigosa (zerinho, cavalo de pau, arrancada).', 'CTB, art. 175', 'Infração: gravíssima x10, suspensão; remoção');
+    if (k.manobra) add('D27', 'vermelho', 'Manobra perigosa (zerinho, cavalo de pau, arrancada), com risco à incolumidade pública ou privada.', 'CTB, art. 308',
+      `AIT: CTB, art. 193 (cód. 58195, gravíssima). Art. 175 só com imagens da manobra, com AIT no local. ${ORIENTACAO}`, 'CTB-308',
+      'Dê voz de prisão e conduza à DP. Qualifique as testemunhas do perigo. Apreenda a CNH e recolha o veículo.');
     if (k.racha) add('D27', 'vermelho', 'Racha ou disputa na via.', 'CTB, art. 308', 'Infração: CTB, art. 173 ou 174', 'CTB-308');
   }
-  if (k.velocidadePessoas) add('D27', 'vermelho', 'Velocidade incompatível onde há concentração de pessoas.', 'CTB, art. 311', '', 'CTB-311');
+  if (k.velocidadePessoas) add('D27', 'vermelho', 'Velocidade incompatível onde há concentração de pessoas.', 'CTB, art. 311', '', 'CTB-311',
+    'Faça o BOTC. Qualifique as testemunhas do risco.');
 
   // D11 a D13: histórico do veículo e da pessoa.
   if (ctx.historico) aviso('D11', 'amarelo', `${ctx.historico} abordage${ctx.historico > 1 ? 'ns anteriores' : 'm anterior'} do mesmo veículo ou pessoa. Isso indica uso reiterado.`, `${DEC}, art. 24, III`);
@@ -201,10 +209,17 @@ function checar(ab, ctx = {}) {
 
   // D28: praia balneária. Lei RS 9.204/1991, art. 1º: veículo proibido; o município demarca e sinaliza. A lei não tem sanção própria.
   if ((ab.lugar?.feicoes || []).includes('Faixa de praia')) {
-    if (c.via && ab.lugar.placaProibicao)
-      add('D28', 'vermelho', 'Veículo na faixa de praia, em trecho com placa de proibição de veículos.', 'Lei RS 9.204/1991, art. 1º',
-        'Infração: CTB, art. 187, I (média)', '', 'Veículo parado com placa de proibido estacionar: CTB, art. 181, XVIII.');
-    else aviso('D28', 'amarelo', 'A Lei RS 9.204/1991 proíbe veículo na praia balneária, mas exige placa do município. Sem placa, oriente e registre.', 'Lei RS 9.204/1991, art. 1º');
+    // Procedimento da ${ORIENTACAO}, item 3, a e b.
+    const placa = ab.lugar.placaProibicao, parado = ab.condutas?.estacionado;
+    if (parado && placa)
+      add('D28', 'vermelho', 'Veículo estacionado na faixa de areia, em trecho com placa de proibição.', 'Lei RS 9.204/1991, art. 1º',
+        `AIT: CTB, art. 181, XVII (cód. 55411, grave; remoção se o condutor não estiver). ${ORIENTACAO}`, '', 'Cite no AIT a placa da entrada de acesso à faixa de areia.');
+    else if (parado)
+      aviso('D28', 'amarelo', 'Veículo estacionado na faixa de areia sem placa no local. O art. 181, XVII exige a placa. Oriente e registre.', `${ORIENTACAO}, item 3, b`);
+    else
+      add('D28', 'vermelho', `Veículo transitando na faixa de areia${placa ? ', em trecho com placa de proibição' : ''}.`, 'Lei RS 9.204/1991, art. 1º',
+        placa ? `AIT: CTB, art. 187, I (cód. 57461, média). ${ORIENTACAO}` : `AIT: CTB, art. 193 (cód. 58195, gravíssima), sem placa no local. ${ORIENTACAO}`, '',
+        'Sem abordagem, lavre o AIT só com o veículo. Confira dano à vegetação fixadora (art. 50).');
     if (semAcentoN(ab.municipio) === 'cidreira')
       aviso('D28', 'info', 'Em Cidreira, a lei libera veículo na orla da Rua Maestro Medanha (Salinas) à divisa com Tramandaí e da Av. G ao terminal turístico. Confira o trecho.', 'Lei Cidreira 628/1997, art. 4º (Lei 3.203/2024)');
   }
@@ -240,7 +255,10 @@ function basesApreensao(ab, motivos, ctx = {}) {
 const GUIA = [
   ['Primeiro o local', 'Classifique o local primeiro. Praia aberta ao público, rua e estrada são via, e nelas o CTB vale. Duna fechada, Tuia e área privada ficam fora de via. Fora de via, use a matriz ambiental e os crimes de trânsito que não exigem via (CTB, arts. 306, 310 e 311).'],
   ['APP', 'A vegetação fixadora de duna é APP em qualquer distância (Lei 12.651, art. 4º, VI). A restinga até 300 m da preamar também é APP, incluídas as dunas (Res. CONAMA 303, art. 3º, IX, a). Esta regra vem de um precedente da 2ª Turma do STJ (REsp 1.827.303/SC), não vinculante. A faixa de lagoa natural é APP. Na zona rural, a faixa é de 100 m, ou 50 m em lagoa de até 20 ha. Na zona urbana, é de 30 m. O banhado também é protegido (Lei 15.434, art. 144). A Res. 303 (art. 3º, XI) faz da duna APP em qualquer lugar. O STJ ainda não decidiu sobre este inciso. A Res. 302 vale só para reservatório artificial, como açude ou barragem.'],
-  ['Praia', 'A Lei RS 9.204/1991 proíbe veículo na praia balneária. O município demarca e sinaliza a área. Com placa e em via, use o CTB, art. 187, I. Sem placa, oriente e registre. Em Cidreira, a Lei 628/1997 libera dois trechos da orla.'],
+  ['Faixa de areia', 'Siga a Orientação 002/2ª Cia/1º BPAmb/2025. Transitar com placa: CTB, art. 187, I (cód. 57461). Transitar sem placa: art. 193 (cód. 58195). Estacionar com placa: art. 181, XVII (cód. 55411), com remoção se o condutor não estiver. Cite a placa no AIT. A base estadual é a Lei RS 9.204/1991. Em Cidreira, a Lei 628/1997 libera dois trechos da orla.'],
+  ['Duna com dano', 'Veículo em duna com dano à vegetação fixadora: crime do art. 50 e AIT do art. 181, VIII (cód. 54524). Faça BOCOP ou BOTC. Para recolher, chame o Detran/RS (0800 906 6006). Sem recolhimento, o condutor fica como fiel depositário.'],
+  ['Manobra na areia', 'Arrancada, frenagem brusca ou cavalo de pau com risco: crime do art. 308 do CTB. Dê voz de prisão e conduza à DP. Apreenda a CNH e recolha o veículo. Lavre o AIT pelo art. 193. Use o art. 175 só com imagens da manobra. Sem manobra, mas com velocidade de risco: crime do art. 311, com BOTC.'],
+  ['Sem placa', 'No Talonário, use "Novo Auto Sem Placa". Lance chassi, cor, marca e modelo.'],
   ['Medir a preamar', 'A APP dos 300 m depende da distância. Registre como mediu: GPS com camada, trena ou imagem. Fotografe a linha de preamar que usou como referência. Uma estimativa não sustenta a APP.'],
   ['Caso típico', 'O veículo esmaga a vegetação fixadora. O crime é o art. 50 da Lei 9.605, com rito de TC. No Auto de Constatação, use o Dec. 55.374, art. 56. Para a prova, registre fotos, área em m², GPS e a descrição da vegetação.'],
   ['Rito', 'Some as penas máximas dos crimes. Até 2 anos, o rito é TC. Acima de 2 anos, conduza à DP. Exemplos acima de 2 anos: arts. 38-A, 40, 63 e 69 da Lei 9.605 e art. 306 do CTB.'],

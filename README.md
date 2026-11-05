@@ -29,6 +29,8 @@ Os textos de tela, do painel e do Guia seguem o ASD-STE100, adaptado ao portugu�
 
 ## Regras
 
+O procedimento na faixa de areia e nas dunas segue a Orientação 002/2ª Cia/1º BPAmb/2025 (29/12/2025): códigos do Talonário no enquadramento, AIT do art. 181, VIII na duna com dano, manobra como crime do art. 308 e AIT pelo art. 193 (o art. 175 só com imagens).
+
 Base legal e regras no documento do projeto ("Fiscal Dunas: base legal e regras do app"). Resumo:
 
 | Regra | O que checa |
@@ -43,7 +45,7 @@ Base legal e regras no documento do projeto ("Fiscal Dunas: base legal e regras 
 | D16 a D19 | Embriaguez, menor e art. 310, veículo sem placa, toca ou ninho |
 | D20 | Sem irregularidade: orientação |
 | D21 a D27 | Trilha reiterada (art. 48), Mata Atlântica (art. 38-A), extração de areia, fuga, evento, habilitação, condutas na via |
-| D28 | Praia balneária (Lei RS 9.204/1991): com placa e em via, CTB art. 187, I; sem placa, orientação; trechos liberados em Cidreira |
+| D28 | Faixa de areia, pela Orientação 002/2ª Cia/1º BPAmb/2025: transitar com placa, CTB art. 187, I; sem placa, art. 193; estacionar com placa, art. 181, XVII; trechos liberados em Cidreira |
 
 ## Desenvolvimento
 

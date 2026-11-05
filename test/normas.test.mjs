@@ -197,19 +197,53 @@ test('GPS no corredor eólico dos Lençóis Cidreirenses', () => {
   assert.equal(areasDoPonto(null).length, 0);
 });
 
-test('D28: praia balneária (Lei RS 9.204/1991): com placa e em via, CTB art. 187, I', () => {
+test('D28: faixa de areia pela Orientação 002/2025 (2ª Cia): com placa 187, I; sem placa 193', () => {
   const praia = { via: true, feicoes: ['Faixa de praia'], placaProibicao: true };
-  const m = de(ab({ lugar: praia }), 'D28', { convenio: true })[0];
-  assert.equal(m.nivel, 'vermelho');
-  assert.match(m.norma, /9\.204/);
-  assert.match(m.enquadramento, /187, I/);
-  assert.equal(m.crime, '', 'não é crime');
+  const com = de(ab({ lugar: praia }), 'D28', { convenio: true })[0];
+  assert.equal(com.nivel, 'vermelho');
+  assert.match(com.norma, /9\.204/);
+  assert.match(com.enquadramento, /187, I .*57461/);
+  assert.equal(com.crime, '', 'não é crime');
   const sem = de(ab({ lugar: { ...praia, placaProibicao: false } }), 'D28', { convenio: true })[0];
-  assert.ok(sem.interno && sem.nivel === 'amarelo', 'sem placa, só orientação');
+  assert.equal(sem.nivel, 'vermelho');
+  assert.match(sem.enquadramento, /193 .*58195/);
+  assert.match(de(ab({ lugar: { feicoes: ['Faixa de praia'] } }), 'D28')[0].enquadramento, /193/, 'faixa de areia vale mesmo sem marcar via');
   assert.ok(!tem(ab({ lugar: { via: true, feicoes: ['Restinga'] } }), 'D28', { convenio: true }));
+});
+
+test('D28: estacionado na faixa de areia com placa, 181, XVII; sem placa, só aviso', () => {
+  const l = { via: true, feicoes: ['Faixa de praia'], placaProibicao: true };
+  const m = de(ab({ lugar: l, condutas: { estacionado: true } }), 'D28', { convenio: true })[0];
+  assert.match(m.enquadramento, /181, XVII .*55411/);
+  assert.match(m.dica, /placa/);
+  const sem = de(ab({ lugar: { ...l, placaProibicao: false }, condutas: { estacionado: true } }), 'D28', { convenio: true });
+  assert.ok(sem.every(x => x.interno), 'sem placa não há AIT de estacionamento');
+});
+
+test('D05: dano em duna também gera AIT do 181, VIII (Orientação 002/2025)', () => {
+  const m = de(ab({ lugar: { fixadora: true }, dano: { vegetacao: 'Herbácea' } }), 'D05')[0];
+  assert.match(m.enquadramento, /181, VIII .*54524/);
+  assert.match(m.dica, /0800 906 6006/);
+});
+
+test('D27: manobra é crime do art. 308; AIT pelo 193; 175 só com imagens', () => {
+  const m = de(ab({ lugar: { via: true }, condutas: { manobra: true } }), 'D27', { convenio: true })[0];
+  assert.equal(m.crime, 'CTB-308');
+  assert.match(m.enquadramento, /193/);
+  assert.match(m.enquadramento, /175 só com imagens/);
+  assert.match(m.dica, /CNH/);
+});
+
+test('D18: sem placa, Talonário em "Novo Auto Sem Placa"', () => {
+  assert.match(de(ab({ lugar: { via: true }, veiculo: { semPlaca: true } }), 'D18', { convenio: true })[0].dica, /Novo Auto Sem Placa/);
 });
 
 test('D28: Cidreira libera dois trechos da orla (Lei 628/1997, art. 4º)', () => {
   const m = de({ ...ab({ lugar: { via: true, feicoes: ['Faixa de praia'], placaProibicao: false } }), municipio: 'Cidreira' }, 'D28', { convenio: true });
   assert.ok(m.some(x => x.interno && /Maestro Medanha/.test(x.texto)));
+});
+
+test('D02: sem convênio também na faixa de areia e na duna (AIT da Orientação 002/2025)', () => {
+  assert.ok(tem(ab({ lugar: { feicoes: ['Faixa de praia'] } }), 'D02'));
+  assert.ok(!tem(ab({ lugar: { feicoes: ['Faixa de praia'] } }), 'D02', { convenio: true }));
 });

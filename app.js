@@ -389,7 +389,7 @@ function telaAbordagem(rota) {
     <details class="card card-dobra" open><summary><h2>5. Condutas</h2></summary>
       ${chk('condutas.embriaguez', 'Sinais de embriaguez')}${chk('condutas.recusaTeste', 'Recusa ao teste de alcoolemia')}
       ${chk('condutas.perigoDano', 'Direção com perigo de dano')}${chk('condutas.velocidadePessoas', 'Velocidade incompatível perto de pessoas')}
-      ${chk('condutas.manobra', 'Zerinho, cavalo de pau ou arrancada')}${chk('condutas.racha', 'Racha ou disputa')}${chk('condutas.semCapacete', 'Sem capacete')}
+      ${chk('condutas.estacionado', 'Veículo estacionado na areia')}${chk('condutas.manobra', 'Zerinho, cavalo de pau ou arrancada')}${chk('condutas.racha', 'Racha ou disputa')}${chk('condutas.semCapacete', 'Sem capacete')}
       ${chk('condutas.fuga', 'Fuga, desobediência ou embaraço à fiscalização')}${chk('condutas.evento', 'Passeio ou evento organizado')}
       <div class="grade">${txt('reincidencia', 'Nº de auto anterior confirmado (reincidência)')}</div></details>
 
