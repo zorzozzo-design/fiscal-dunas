@@ -127,7 +127,8 @@ function historicoDe(A) {
   return Object.values(db.abordagens).filter(o => o.id !== A.id && (o.data || '') <= (A.data || '~') && chaves(o).some(k => minhas.has(k)))
     .sort((a, b) => b.data.localeCompare(a.data));
 }
-const temConvenio = mun => (db.cfg.convenios || []).some(m => semAcento(m) === semAcento(mun));
+// Todo o RS tem convênio de trânsito com a BM; em Dados ficam só as exceções (convênio vencido ou suspenso).
+const temConvenio = mun => !(db.cfg.semConvenio || []).some(m => semAcento(m) === semAcento(mun));
 function calcular(A) {
   const hist = historicoDe(A), ctx = { convenio: temConvenio(A.municipio), historico: hist.length };
   const motivos = checar(A, ctx);
@@ -412,12 +413,12 @@ function mesclarBackup(outro) {
     const a = db.abordagens[id];
     if (!a || (b.atualizadoEm || '') > (a.atualizadoEm || '')) { db.abordagens[id] = b; sujosAb.add(id); n++; }
   }
-  db.cfg.convenios = [...new Set([...(db.cfg.convenios || []), ...(outro.cfg?.convenios || [])])];
+  db.cfg.semConvenio = [...new Set([...(db.cfg.semConvenio || []), ...(outro.cfg?.semConvenio || [])])];
   return n;
 }
 function telaDados() {
   const ag = db.cfg.agente || {}, logos = { ...(db.cfg.logos || {}) };
-  const conv = new Set(db.cfg.convenios || []);
+  const conv = new Set(db.cfg.semConvenio || []);
   app.innerHTML = `<div class="card"><h1>Dados</h1><h2>Agente</h2>
       <div class="grade"><div><label for="g-nome">Nome</label><input id="g-nome" value="${esc(ag.nome)}"></div>
         <div><label for="g-id">Id funcional</label><input id="g-id" value="${esc(ag.idFunc)}"></div>
@@ -426,9 +427,9 @@ function telaDados() {
       <div class="grade"><div><label for="l-bras">Brasão do RS</label><input id="l-bras" type="file" accept="image/*"><div id="v-bras"></div></div>
         <div><label for="l-cmd">Logo do Comando Ambiental</label><input id="l-cmd" type="file" accept="image/*"><div id="v-cmd"></div></div></div>
       <p><button id="b-ag" type="button">Salvar</button></p></div>
-    <div class="card"><h2>Convênios de trânsito</h2><p class="muted peq">Marque os municípios com convênio de trânsito vigente com a BM (CTB, art. 23, III). Sem convênio, o app não sugere AIT nem remoção.</p>
+    <div class="card"><h2>Convênios de trânsito</h2><p class="muted peq">Todo o RS tem convênio de trânsito vigente com a BM (CTB, art. 23, III). Marque só os municípios em que o convênio venceu ou foi suspenso: neles o app não sugere AIT nem remoção.</p>
       <div class="chips">${MUNICIPIOS.map(m => `<label class="chk chip-chk"><input type="checkbox" data-conv="${esc(m)}"${conv.has(m) ? ' checked' : ''}> ${esc(m)}</label>`).join('')}</div>
-      <label for="c-outros">Outros municípios (separe por vírgula)</label><input id="c-outros" value="${esc([...conv].filter(m => !MUNICIPIOS.includes(m)).join(', '))}">
+      <label for="c-outros">Outros municípios sem convênio (separe por vírgula)</label><input id="c-outros" value="${esc([...conv].filter(m => !MUNICIPIOS.includes(m)).join(', '))}">
       <p><button id="b-conv" type="button">Salvar convênios</button></p></div>
     <div class="card"><h2>Backup</h2><p class="muted peq">Os dados só existem neste aparelho. O backup sai criptografado com a sua senha.${db.cfg.ultimoBackup ? ` Último: ${fmtData(db.cfg.ultimoBackup)}.` : ''}</p>
       <div class="linha"><button class="sec" id="b-exp" type="button">Baixar backup</button><button class="sec" id="b-nuvem" type="button">Enviar para a nuvem</button>
@@ -448,7 +449,7 @@ function telaDados() {
     await salvarCom('Dados do agente salvos.');
   };
   $('#b-conv').onclick = async () => {
-    db.cfg.convenios = [...[...document.querySelectorAll('[data-conv]')].filter(c => c.checked).map(c => c.dataset.conv),
+    db.cfg.semConvenio = [...[...document.querySelectorAll('[data-conv]')].filter(c => c.checked).map(c => c.dataset.conv),
       ...$('#c-outros').value.split(',').map(s => s.trim()).filter(Boolean)];
     await salvarCom('Convênios salvos.');
   };

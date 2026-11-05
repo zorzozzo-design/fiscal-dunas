@@ -100,7 +100,7 @@ function checar(ab, ctx = {}) {
   const dobro = emUc ? ' (em dobro: UC, art. 108)' : '';
 
   // D01 e D02: a matriz de trânsito administrativa só vale em via e com convênio.
-  if (c.via && !ctx.convenio) aviso('D02', 'amarelo', 'Município sem convênio de trânsito cadastrado: registre e acione o órgão de trânsito. Não lavre AIT.', 'CTB, art. 23, III');
+  if (c.via && !ctx.convenio) aviso('D02', 'amarelo', 'Município marcado sem convênio de trânsito vigente: registre e acione o órgão de trânsito. Não lavre AIT.', 'CTB, art. 23, III');
   if (!c.via) aviso('D01', 'info', 'Fora de via: não há infração administrativa do CTB. Valem a matriz ambiental e os crimes que não exigem via pública.', 'CTB, arts. 1º e 2º');
 
   // D03: duna frontal, campo de dunas móveis, banhado ou capão de mata (Zona Costeira).
