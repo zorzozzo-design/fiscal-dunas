@@ -7,9 +7,9 @@ Os dados ficam só no aparelho, criptografados com a senha (AES-GCM, chave PBKDF
 ## Uso
 
 1. Criar a senha.
-2. **Dados:** nome, Id funcional e fração do agente, endereço de comparecimento, brasão e logo do Comando (as imagens ficam só no aparelho). Todo o RS tem convênio de trânsito com a BM, e o app parte disso. Se o convênio de algum município vencer ou for suspenso, marque-o em **Convênios de trânsito**: lá o app não sugere AIT nem remoção (CTB, art. 23, III).
+2. **Dados:** camadas do mapa em KML ou GeoJSON (UC, dunas, preamar, lagoas; shapefile e KMZ precisam ser convertidos para KML), nome, Id funcional e fração do agente, endereço de comparecimento, brasão e logo do Comando (as imagens ficam só no aparelho). Todo o RS tem convênio de trânsito com a BM, e o app parte disso. Se o convênio de algum município vencer ou for suspenso, marque-o em **Convênios de trânsito**: lá o app não sugere AIT nem remoção (CTB, art. 23, III).
 3. **Nova abordagem**, em sete blocos:
-   1. **Local:** via ou fora de via, ambiente (duna frontal, campo de dunas móveis, banhado, restinga...), vegetação fixadora, distância da preamar e da lagoa, UC, terreno de marinha, área privada. O GPS avisa quando o ponto está no corredor eólico dos Lençóis Cidreirenses.
+   1. **Local:** via ou fora de via, ambiente (duna frontal, campo de dunas móveis, banhado, restinga...), vegetação fixadora, distância da preamar e da lagoa, UC, terreno de marinha, área privada. O GPS avisa quando o ponto está no corredor eólico dos Lençóis Cidreirenses e, com camadas importadas, em que área o ponto está e a distância das linhas (preamar, margem de lagoa) até 2 km.
    2. **Veículo:** tipo, placa, chassi, registro. Placa ou chassi já abordados aparecem como histórico (uso reiterado).
    3. **Condutor e proprietário:** qualificação, CNH, quem entregou a direção.
    4. **Dano e fotos:** vegetação, estágio, área em m², sulcos, trilha reiterada, toca ou ninho, extração de areia. Fotos pela câmera ou da galeria, com legenda. Hora e coordenadas vêm do EXIF da foto; foto tirada pelo app sem GPS no arquivo recebe o GPS do aparelho; foto da galeria sem GPS fica sem coordenadas. Cada foto é reduzida a 1280 px e guardada à parte, criptografada: a abordagem leva só a referência (legenda, hora, GPS), e a imagem é lida apenas quando aparece na tela ou no relatório. O backup pode incluir as fotos ou não.
@@ -47,5 +47,5 @@ Base legal e regras no documento do projeto ("Fiscal Dunas: base legal e regras 
 
 ## Próximas fases
 
-- Camadas offline: linha de preamar, faixas de lagoa, dunas frontais (FEPAM/GERCO) e limites de UC.
+- Obter os arquivos oficiais das camadas (FEPAM/GERCO, ICMBio, SEMA) e deixar um pacote pronto do Litoral Norte para importar.
 - Normas municipais de trânsito na orla, quando localizadas.

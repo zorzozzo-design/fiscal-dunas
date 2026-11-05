@@ -1,6 +1,7 @@
 const { FEICOES, areasDoPonto, checar, rito, crimesDe, agravantes, basesApreensao, CRIMES, GUIA } = window.Normas;
 const { NOTIF_ABERTURA, DESTINOS, descVeiculo, motivoSugerido, notificacao, termoApreensao, autoConstatacao, historicoBO, pendenciasDe, lembreteBackup, relatorioFotografico, fotoInfo } = window.Docs;
 const { lerExif } = window.Fotos;
+const { lerCamada, consultar } = window.Camadas;
 
 // ---------- utilitários ----------
 const $ = s => document.querySelector(s);
@@ -75,6 +76,8 @@ const urlFoto = id => {
 };
 
 let chave = null, salt = null, db = null;
+// Camadas do mapa: dados públicos, sem cifra, fora do backup e fora do bloco regravado a cada salvamento.
+let camadas = [];
 const sujosAb = new Set();
 async function salvar() {
   const lote = [...sujosAb]; sujosAb.clear();
@@ -89,6 +92,7 @@ async function carregar(meta) {
   const regs = await new Promise((ok, erro) => { const out = [], r = d.transaction('abordagens').objectStore('abordagens').openCursor();
     r.onsuccess = () => { const c = r.result; if (!c) return ok(out); out.push([c.key, c.value]); c.continue(); }; r.onerror = () => erro(r.error); });
   for (const [id, v] of regs) db.abordagens[id] = await decifrar(chave, v);
+  camadas = (await tx('kv', 'readonly', s => s.get('camadas'))) || [];
 }
 
 let tAviso;
@@ -381,8 +385,9 @@ function telaAbordagem(id) {
   };
   const verGps = () => {
     if (!A.gps) { $('#gps').textContent = ''; return; }
-    const areas = areasDoPonto(A.gps);
-    $('#gps').innerHTML = `${A.gps.lat.toFixed(5)}, ${A.gps.lon.toFixed(5)} (±${A.gps.precisaoM ?? '?'} m)${areas.map(a => `<br><b>${esc(a)}</b>`).join('')}`;
+    const areas = areasDoPonto(A.gps), cam = consultar(camadas, A.gps);
+    $('#gps').innerHTML = `${A.gps.lat.toFixed(5)}, ${A.gps.lon.toFixed(5)} (±${A.gps.precisaoM ?? '?'} m)${areas.map(a => `<br><b>${esc(a)}</b>`).join('')}`
+      + cam.map(r => `<br>${r.dentro ? `<b>Dentro de: ${esc(r.feicao)}</b>` : `${esc(r.feicao)}: ${r.distM} m`} <span class="muted">(${esc(r.camada)})</span>`).join('');
   };
   const fotos = () => {
     $('#fotos').innerHTML = A.fotos.map((x, i) => `<div class="foto"><img data-foto="${x.id}" alt="Foto ${i + 1}">
@@ -507,6 +512,10 @@ function telaDados() {
       <div class="chips">${MUNICIPIOS.map(m => `<label class="chk chip-chk"><input type="checkbox" data-conv="${esc(m)}"${conv.has(m) ? ' checked' : ''}> ${esc(m)}</label>`).join('')}</div>
       <label for="c-outros">Outros municípios sem convênio (separe por vírgula)</label><input id="c-outros" value="${esc([...conv].filter(m => !MUNICIPIOS.includes(m)).join(', '))}">
       <p><button id="b-conv" type="button">Salvar convênios</button></p></div>
+    <div class="card"><h2>Camadas do mapa</h2><p class="muted peq">Importe arquivos KML ou GeoJSON (UC, campo de dunas, linha de preamar, margem de lagoa). Ao registrar o GPS, a abordagem mostra em que área o ponto está e a distância das linhas até 2 km. Shapefile ou KMZ: converta antes para KML (Google Earth ou QGIS). As camadas ficam só neste aparelho e não entram no backup.</p>
+      <ul id="l-cam" class="peq"></ul>
+      <label class="btn sec" for="f-cam-imp">Importar camada</label><input id="f-cam-imp" type="file" accept=".kml,.geojson,.json,application/vnd.google-earth.kml+xml,application/geo+json,application/json" multiple hidden>
+      <p id="m-cam" class="msg peq"></p></div>
     <div class="card"><h2>Backup</h2><p class="muted peq">Os dados só existem neste aparelho. O backup sai criptografado com a sua senha.${db.cfg.ultimoBackup ? ` Último: ${fmtData(db.cfg.ultimoBackup)}.` : ''}</p>
       <div class="linha"><button class="sec" id="b-exp" type="button">Baixar backup</button><button class="sec" id="b-nuvem" type="button">Enviar para a nuvem</button>
         <label class="btn sec" for="f-bak">Importar backup</label><input id="f-bak" type="file" accept="application/json,.json" hidden></div>
@@ -530,6 +539,24 @@ function telaDados() {
       ...$('#c-outros').value.split(',').map(s => s.trim()).filter(Boolean)];
     await salvarCom('Convênios salvos.');
   };
+  const verCamadas = () => {
+    $('#l-cam').innerHTML = camadas.map((c, i) => `<li>${esc(c.nome)} <span class="muted">(${c.feicoes.length} feiç${c.feicoes.length > 1 ? 'ões' : 'ão'})</span>
+      <button type="button" class="sec" data-rmcam="${i}">Remover</button></li>`).join('') || '<li class="muted">Nenhuma camada.</li>';
+  };
+  const gravarCamadas = () => tx('kv', 'readwrite', s => s.put(camadas, 'camadas'));
+  $('#f-cam-imp').onchange = async e => {
+    const fs = [...e.target.files]; e.target.value = '';
+    const erros = [];
+    for (const f of fs) try { camadas.push(lerCamada(await f.text(), f.name)); } catch (err) { erros.push(`${f.name}: ${err.message}`); }
+    await gravarCamadas(); verCamadas();
+    msg('#m-cam', erros.length ? erros.join(' ') : 'Camada importada.', !!erros.length);
+  };
+  $('#l-cam').onclick = async e => {
+    const i = e.target.dataset.rmcam;
+    if (i == null || !confirm(`Remover a camada "${camadas[i].nome}"?`)) return;
+    camadas.splice(+i, 1); await gravarCamadas(); verCamadas();
+  };
+  verCamadas();
   const baixar = (blob, nome) => { const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: nome }); a.click(); URL.revokeObjectURL(a.href); };
   const exportar = async enviar => {
     const nome = `backup-dunas-${hojeIso()}.json`;
