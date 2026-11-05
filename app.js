@@ -40,8 +40,8 @@ const COR_TXT = { verde: 'Sem irregularidade', amarelo: 'Conferir', vermelho: 'I
 // ---------- armazenamento criptografado (IndexedDB + AES-GCM), mesmo modelo do Fiscal Pesca ----------
 function idb() {
   return new Promise((ok, erro) => {
-    const r = indexedDB.open('fiscal-dunas', 1);
-    r.onupgradeneeded = () => { for (const l of ['kv', 'abordagens']) if (!r.result.objectStoreNames.contains(l)) r.result.createObjectStore(l); };
+    const r = indexedDB.open('fiscal-dunas', 2);
+    r.onupgradeneeded = () => { for (const l of ['kv', 'abordagens', 'fotos']) if (!r.result.objectStoreNames.contains(l)) r.result.createObjectStore(l); };
     r.onsuccess = () => ok(r.result);
     r.onerror = () => erro(r.error);
   });
@@ -63,6 +63,16 @@ async function cifrar(chave, salt, obj) {
 async function decifrar(chave, cofre) {
   return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(cofre.iv) }, chave, unb64(cofre.ct))));
 }
+// Fotos: cada uma num registro próprio, cifrada em binário. A abordagem guarda só a referência (id, legenda, hora, GPS),
+// e a imagem é lida só quando aparece na tela ou no relatório.
+const cifrarBytes = async (k, bytes) => { const iv = crypto.getRandomValues(new Uint8Array(12)); return { iv, ct: await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, bytes) }; };
+const decifrarBytes = (k, r) => crypto.subtle.decrypt({ name: 'AES-GCM', iv: r.iv }, k, r.ct);
+const urlsFoto = new Map();
+const urlFoto = id => {
+  if (!urlsFoto.has(id)) urlsFoto.set(id, tx('fotos', 'readonly', s => s.get(id))
+    .then(async r => r ? URL.createObjectURL(new Blob([await decifrarBytes(chave, r)], { type: 'image/jpeg' })) : ''));
+  return urlsFoto.get(id);
+};
 
 let chave = null, salt = null, db = null;
 const sujosAb = new Set();
@@ -185,21 +195,22 @@ function novaAbordagem() {
     providencias: [], apreensao: null, notificacao: null, fatos: '', atenuantes: '', obs: '', recusaAssinatura: false, resolvidas: [], fotos: [] };
 }
 
-// Foto reduzida a 1600 px em JPEG (o navegador já aplica a orientação do EXIF).
+// Foto reduzida a 1280 px em JPEG (o navegador já aplica a orientação do EXIF).
 async function reduzir(file) {
-  const bmp = await createImageBitmap(file), k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+  const bmp = await createImageBitmap(file), k = Math.min(1, 1280 / Math.max(bmp.width, bmp.height));
   const c = Object.assign(document.createElement('canvas'), { width: Math.round(bmp.width * k), height: Math.round(bmp.height * k) });
   c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height); bmp.close?.();
-  return c.toDataURL('image/jpeg', 0.8);
+  return new Promise(ok => c.toBlob(ok, 'image/jpeg', 0.75));
 }
 const posicao = () => new Promise(ok => navigator.geolocation ? navigator.geolocation.getCurrentPosition(
   p => ok({ lat: p.coords.latitude, lon: p.coords.longitude, precisaoM: Math.round(p.coords.accuracy) }), () => ok(null),
   { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }) : ok(null));
 
-function imprimir(html) {
+async function imprimir(html) {
   let d = $('#impressao');
   if (!d) { d = Object.assign(document.createElement('div'), { id: 'impressao' }); document.body.appendChild(d); }
   d.innerHTML = html;
+  await Promise.all([...d.querySelectorAll('img')].map(i => i.decode().catch(() => {})));
   document.body.classList.add('imprimindo');
   const fim = () => { document.body.classList.remove('imprimindo'); removeEventListener('afterprint', fim); };
   addEventListener('afterprint', fim);
@@ -211,6 +222,8 @@ function telaAbordagem(id) {
   if (id !== 'novo' && !ex) { app.innerHTML = '<div class="card"><p>Abordagem não encontrada.</p><p><a href="#/">Voltar</a></p></div>'; return; }
   const A = ex ? structuredClone(ex) : novaAbordagem();
   A.fotos ??= [];
+  const novas = new Map(); // fotos ainda não gravadas: id -> Blob
+  let salvas = new Set(A.fotos.map(x => x.id));
   let alterado = false;
   app.innerHTML = `<form id="fa" autocomplete="off">
     <div class="card"><p class="peq"><a href="#/">← Abordagens</a></p><h1>${ex ? 'Abordagem' : 'Nova abordagem'}</h1>
@@ -372,10 +385,11 @@ function telaAbordagem(id) {
     $('#gps').innerHTML = `${A.gps.lat.toFixed(5)}, ${A.gps.lon.toFixed(5)} (±${A.gps.precisaoM ?? '?'} m)${areas.map(a => `<br><b>${esc(a)}</b>`).join('')}`;
   };
   const fotos = () => {
-    $('#fotos').innerHTML = A.fotos.map((x, i) => `<div class="foto"><img src="${esc(x.img)}" alt="Foto ${i + 1}">
+    $('#fotos').innerHTML = A.fotos.map((x, i) => `<div class="foto"><img data-foto="${x.id}" alt="Foto ${i + 1}">
       <div><b>Foto ${i + 1}</b> <span class="muted peq">${esc(fotoInfo(x))}</span>
         <input data-leg="${x.id}" placeholder="Legenda: o que a foto mostra" value="${esc(x.legenda)}">
         <button type="button" class="sec" data-rmfoto="${x.id}">Remover</button></div></div>`).join('');
+    $('#fotos').querySelectorAll('[data-foto]').forEach(img => urlFoto(img.dataset.foto).then(u => { img.src = u; }));
   };
   // Coordenada: a do EXIF; sem ela, a do aparelho só para foto tirada agora pelo app.
   const addFotos = async (files, camera) => {
@@ -385,7 +399,9 @@ function telaAbordagem(id) {
       let gps = null, origem = '';
       if (e.lat != null) { gps = { lat: e.lat, lon: e.lon }; origem = 'exif'; }
       else if (camera) { if (pos === undefined) pos = await posicao(); if (pos) { gps = pos; origem = 'aparelho'; } }
-      A.fotos.push({ id: novoId(), img: await reduzir(file), legenda: '', data: e.data || (camera ? agoraLocal() : ''), gps, origem });
+      const id = novoId(), blob = await reduzir(file);
+      novas.set(id, blob); urlsFoto.set(id, Promise.resolve(URL.createObjectURL(blob)));
+      A.fotos.push({ id, legenda: '', data: e.data || (camera ? agoraLocal() : ''), gps, origem });
     }
     alterado = true; fotos(); desenhar();
   };
@@ -396,7 +412,7 @@ function telaAbordagem(id) {
   $('#fotos').onclick = e => {
     const id = e.target.dataset.rmfoto;
     if (!id || !confirm('Remover esta foto?')) return;
-    A.fotos = A.fotos.filter(x => x.id !== id); alterado = true; fotos(); desenhar();
+    A.fotos = A.fotos.filter(x => x.id !== id); novas.delete(id); alterado = true; fotos(); desenhar();
   };
   $('#b-fatos').onclick = () => {
     if (A.fatos && !confirm('Substituir o texto atual?')) return;
@@ -409,7 +425,9 @@ function telaAbordagem(id) {
     const r = calcular(A), t = b.dataset.doc;
     if (t === 'notificacao') return A.notificacao ? imprimir(notificacao(A, db.cfg)) : aviso('Marque "Notificar o condutor".', 'erro');
     if (t === 'auto') return imprimir(autoConstatacao(A, db.cfg, r));
-    if (t === 'fotos') return A.fotos.length ? imprimir(relatorioFotografico(A, db.cfg)) : aviso('Nenhuma foto nesta abordagem.', 'erro');
+    if (t === 'fotos') return A.fotos.length ? ocupado(async () => imprimir(relatorioFotografico({ ...A,
+      fotos: await Promise.all(A.fotos.map(async x => ({ ...x, img: await urlFoto(x.id) }))) }, db.cfg)), 'Montando o relatório')
+      : aviso('Nenhuma foto nesta abordagem.', 'erro');
     // D10 e D14: o termo exige base válida e valor de avaliação.
     if (!A.apreensao) return aviso('Marque "Apreender".', 'erro');
     const base = r.bases.find(x => x.base === A.apreensao.base);
@@ -422,16 +440,24 @@ function telaAbordagem(id) {
     if (!confirm('Apagar esta abordagem?')) return;
     delete db.abordagens[A.id];
     await tx('abordagens', 'readwrite', s => s.delete(A.id));
+    if (salvas.size) await tx('fotos', 'readwrite', s => salvas.forEach(fid => s.delete(fid)));
     await salvarCom('Abordagem apagada.');
     alterado = false; location.hash = '#/';
   });
   $('#ba-cor').onclick = () => $('#enq').scrollIntoView({ behavior: 'smooth' });
   const gravar = async () => {
     A.atualizadoEm = agora();
+    // Fotos novas antes da abordagem (ela nunca aponta para foto inexistente); as removidas, depois.
+    const ids = new Set(A.fotos.map(x => x.id));
+    const put = await Promise.all([...novas].filter(([fid]) => ids.has(fid)).map(async ([fid, b]) => [fid, await cifrarBytes(chave, await b.arrayBuffer())]));
+    if (put.length) await tx('fotos', 'readwrite', s => put.forEach(([fid, r]) => s.put(r, fid)));
     db.abordagens[A.id] = structuredClone(A);
     sujosAb.add(A.id);
     if (A.municipio) gravarPref('fdunas-mun', A.municipio);
     await salvar();
+    const del = [...salvas].filter(fid => !ids.has(fid));
+    if (del.length) await tx('fotos', 'readwrite', s => del.forEach(fid => s.delete(fid)));
+    novas.clear(); salvas = ids;
     alterado = false;
     if (!ex) { history.replaceState(null, '', `#/ab/${A.id}`); hashAtual = location.hash; }
     $('#m-ab').textContent = `Salva às ${new Date().toTimeString().slice(0, 5)}`;
@@ -484,6 +510,7 @@ function telaDados() {
     <div class="card"><h2>Backup</h2><p class="muted peq">Os dados só existem neste aparelho. O backup sai criptografado com a sua senha.${db.cfg.ultimoBackup ? ` Último: ${fmtData(db.cfg.ultimoBackup)}.` : ''}</p>
       <div class="linha"><button class="sec" id="b-exp" type="button">Baixar backup</button><button class="sec" id="b-nuvem" type="button">Enviar para a nuvem</button>
         <label class="btn sec" for="f-bak">Importar backup</label><input id="f-bak" type="file" accept="application/json,.json" hidden></div>
+      <label class="chk"><input type="checkbox" id="bk-fotos" checked> Incluir as fotos no backup (arquivo maior)</label>
       <p id="m-bak" class="msg peq"></p>
       <details><summary>Apagar todos os dados deste aparelho</summary><p><button id="b-zerar" class="perigo" type="button">Apagar tudo</button></p></details></div>`;
   const verLogos = () => {
@@ -506,7 +533,20 @@ function telaDados() {
   const baixar = (blob, nome) => { const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: nome }); a.click(); URL.revokeObjectURL(a.href); };
   const exportar = async enviar => {
     const nome = `backup-dunas-${hojeIso()}.json`;
-    const blob = new Blob([JSON.stringify(await ocupado(() => cifrar(chave, salt, db), 'Gerando o backup'))], { type: 'application/json' });
+    const comFotos = $('#bk-fotos').checked;
+    // As fotos vão como estão no aparelho (já cifradas com a mesma chave), fora do bloco principal: sem cifrar duas vezes.
+    const cofre = await ocupado(async () => {
+      const c = await cifrar(chave, salt, db);
+      if (comFotos) {
+        c.fotos = {};
+        for (const id of Object.values(db.abordagens).flatMap(a => (a.fotos || []).map(x => x.id))) {
+          const r = await tx('fotos', 'readonly', s => s.get(id));
+          if (r) c.fotos[id] = { iv: b64(r.iv), ct: b64(r.ct) };
+        }
+      }
+      return c;
+    }, 'Gerando o backup');
+    const blob = new Blob([JSON.stringify(cofre)], { type: 'application/json' });
     const marcar = async () => { db.cfg.ultimoBackup = agora(); await salvar(); };
     if (enviar && navigator.canShare) {
       const arq = new File([blob], nome, { type: 'application/json' });
@@ -526,9 +566,14 @@ function telaDados() {
       if (cofre.app !== 'fiscal-dunas') throw new Error('Este arquivo não é um backup do Fiscal Dunas.');
       const senha = prompt('Senha usada no aparelho que gerou o backup:');
       if (!senha) return;
-      let outro;
-      try { outro = await ocupado(async () => decifrar(await derivar(senha, unb64(cofre.salt)), cofre), 'Abrindo o backup'); } catch { throw new Error('Senha do backup incorreta.'); }
+      let outro, k;
+      try { outro = await ocupado(async () => decifrar(k = await derivar(senha, unb64(cofre.salt)), cofre), 'Abrindo o backup'); } catch { throw new Error('Senha do backup incorreta.'); }
       const n = mesclarBackup(outro);
+      const fs = Object.entries(cofre.fotos || {});
+      if (fs.length) await ocupado(async () => {
+        const regs = await Promise.all(fs.map(async ([id, r]) => [id, await cifrarBytes(chave, await decifrarBytes(k, { iv: unb64(r.iv), ct: unb64(r.ct) }))]));
+        await tx('fotos', 'readwrite', s => regs.forEach(([id, r]) => s.put(r, id)));
+      }, 'Importando as fotos');
       await salvarCom('Backup mesclado.');
       telaDados(); msg('#m-bak', `Backup mesclado (${n} abordagem(ns) nova(s) ou atualizada(s)).`);
     } catch (err) { msg('#m-bak', err.message, true); }
