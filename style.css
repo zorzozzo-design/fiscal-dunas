@@ -275,7 +275,7 @@ details.local p { margin: 4px 0; }
 .colar { margin: 6px 0 10px; }
 .fotos { display: grid; gap: 10px; margin: 6px 0; }
 .foto { display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: start; }
-.foto img { width: 96px; height: 96px; object-fit: cover; border-radius: 8px; }
+.foto img, .foto video { width: 96px; height: 96px; object-fit: cover; border-radius: 8px; background: #000; }
 .foto input { margin: 4px 0; }
 .provs { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; }
 .prov { display: grid; gap: 2px; align-content: start; }

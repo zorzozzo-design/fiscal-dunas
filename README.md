@@ -23,7 +23,7 @@ Os textos de tela, do painel e do Guia seguem o ASD-STE100, adaptado ao portugu�
 
    O painel recalcula a cada campo: regras D01 a D27, crime e infração sugeridos, rito, agravantes e pendências. **O painel indica, mas não autua.** O Termo de Apreensão só sai com base válida e valor de avaliação (D10 e D14).
 4. **Documentos:** Notificação Ambiental, Termo de Apreensão e Fiel Depositário, Auto de Constatação (Dec. RS 55.374/2020, art. 119), Relatório Fotográfico e cópia do histórico para o BO/TC. Com fotos, o Auto e o histórico citam o relatório. Para salvar em PDF, toque em "Imprimir".
-5. **Denúncias:** aba ao lado de Abordagens. Registre data, situação, tipo, origem, local e relato. Cole a mensagem do WhatsApp no relato. A denúncia mostra as abordagens com a mesma placa. O backup leva as denúncias.
+5. **Denúncias:** aba ao lado de Abordagens. Registre data, situação, tipo, origem, local e relato. Cole a mensagem do WhatsApp no relato. Anexe fotos e vídeos (vídeo até 50 MB). Para ir ao local, toque em **Nova abordagem desta denúncia**: a abordagem já vem com município, local e placa. A denúncia mostra as abordagens ligadas a ela e as abordagens com a mesma placa. Use a busca para achar uma denúncia por local, placa, pessoa ou relato. O backup leva as denúncias e, se marcado, os anexos.
 6. **Guia:** resumo da base legal para consulta sem internet.
 7. **Backup:** baixe o arquivo ou envie para a nuvem. Para importar em outro aparelho, use a senha do aparelho de origem. O app mescla as abordagens e mantém a edição mais recente. Escolha se o backup leva as fotos.
 

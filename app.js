@@ -69,11 +69,17 @@ async function decifrar(chave, cofre) {
 const cifrarBytes = async (k, bytes) => { const iv = crypto.getRandomValues(new Uint8Array(12)); return { iv, ct: await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, bytes) }; };
 const decifrarBytes = (k, r) => crypto.subtle.decrypt({ name: 'AES-GCM', iv: r.iv }, k, r.ct);
 const urlsFoto = new Map();
-const urlFoto = id => {
+const urlFoto = (id, tipo = 'image/jpeg') => {
   if (!urlsFoto.has(id)) urlsFoto.set(id, tx('fotos', 'readonly', s => s.get(id))
-    .then(async r => r ? URL.createObjectURL(new Blob([await decifrarBytes(chave, r)], { type: 'image/jpeg' })) : ''));
+    .then(async r => r ? URL.createObjectURL(new Blob([await decifrarBytes(chave, r)], { type: tipo })) : ''));
   return urlsFoto.get(id);
 };
+// Grava as fotos novas antes do registro que aponta para elas (nunca fica referência sem foto). Apaga as removidas depois.
+async function gravarFotosNovas(novas, ids) {
+  const put = await Promise.all([...novas].filter(([fid]) => ids.has(fid)).map(async ([fid, b]) => [fid, await cifrarBytes(chave, await b.arrayBuffer())]));
+  if (put.length) await tx('fotos', 'readwrite', s => put.forEach(([fid, r]) => s.put(r, fid)));
+}
+const apagarFotos = async ids => { if (ids.length) await tx('fotos', 'readwrite', s => ids.forEach(fid => s.delete(fid))); };
 
 let chave = null, salt = null, db = null;
 // Camadas do mapa: dados públicos, sem cifra, fora do backup e fora do bloco regravado a cada salvamento.
@@ -166,16 +172,28 @@ const separar = s => String(s || '').split(/[,;\n]/).map(x => x.trim()).filter(B
 function telaDenuncias() {
   const ds = (db.cfg.denuncias ||= []).slice().sort((a, b) => (b.data || '').localeCompare(a.data || ''));
   app.innerHTML = `<div class="card">${abas('den')}<div class="linha" style="justify-content:space-between"><h1>Denúncias</h1><a class="btn" href="#/denuncia/novo">Nova denúncia</a></div>
-    <ul class="lista">${ds.map(d => `<li><a href="#/denuncia/${d.id}"><div class="nome">${esc(d.tipo)} · ${esc(d.situacao)}</div>
+    <input id="qd" type="search" placeholder="Local, placa, pessoa ou relato" value="${esc(filtro.qd || '')}" autocomplete="off">
+    <p id="contd" class="muted peq"></p><ul id="listad" class="lista"></ul></div>`;
+  const desenhar = () => {
+    const q = semAcento(filtro.qd || '').trim();
+    const vs = ds.filter(d => !q || semAcento([d.tipo, d.situacao, d.local, d.municipio, d.descricao, d.obs, ...(d.placas || []), ...(d.pessoas || [])].join(' ')).includes(q));
+    $('#contd').textContent = `${vs.length} de ${ds.length} denúncias`;
+    $('#listad').innerHTML = vs.map(d => `<li><a href="#/denuncia/${d.id}"><div class="nome">${esc(d.tipo)} · ${esc(d.situacao)}${d.anexos?.length ? ` · ${d.anexos.length} anexo(s)` : ''}</div>
       <div class="info">${fmtData(d.data)} · ${esc([d.local, d.municipio].filter(Boolean).join(', '))}${d.placas?.length ? ' · ' + esc(d.placas.join(', ')) : ''}</div>
-      <div class="info">${esc((d.descricao || '').slice(0, 90))}</div></a></li>`).join('') || '<li class="muted peq" style="padding:10px">Nenhuma denúncia.</li>'}</ul></div>`;
+      <div class="info">${esc((d.descricao || '').slice(0, 90))}</div></a></li>`).join('') || '<li class="muted peq" style="padding:10px">Nenhuma denúncia.</li>';
+  };
+  $('#qd').oninput = e => { filtro.qd = e.target.value; desenhar(); };
+  desenhar();
 }
 function telaDenuncia(id) {
   const ex = (db.cfg.denuncias ||= []).find(d => d.id === id);
   const d = ex ? structuredClone(ex) : { id: novoId(), data: hojeIso(), tipo: TIPOS_DEN[0], origem: ORIGENS_DEN[0], situacao: 'Nova',
     municipio: lerPref('fdunas-mun') || '', local: '', descricao: '', pessoas: [], placas: [], obs: '' };
-  // Abordagens com a mesma placa: liga a denúncia ao que já foi feito no campo.
-  const abs = Object.values(db.abordagens).filter(a => a.veiculo?.placa && d.placas.includes(soAlnum(a.veiculo.placa).toUpperCase()));
+  d.anexos ??= [];
+  const novas = new Map(); // anexos ainda não gravados: id -> Blob
+  let salvas = new Set(d.anexos.map(x => x.id));
+  // Abordagens abertas desta denúncia ou com a mesma placa: liga a denúncia ao que já foi feito no campo.
+  const abs = Object.values(db.abordagens).filter(a => a.denunciaId === d.id || (a.veiculo?.placa && d.placas.includes(soAlnum(a.veiculo.placa).toUpperCase())));
   app.innerHTML = `<div class="card"><p class="peq"><a href="#/denuncias">← Denúncias</a></p><h1>${ex ? 'Denúncia' : 'Nova denúncia'}</h1>
     <div class="grade">
       <div><label for="d-data">Data</label><input id="d-data" type="date" value="${esc(d.data)}"></div>
@@ -189,23 +207,60 @@ function telaDenuncia(id) {
     <label for="d-placas">Placas (separe com vírgula)</label><input id="d-placas" autocapitalize="characters" value="${esc(d.placas.join(', '))}">
     <label for="d-pessoas">Pessoas citadas (uma por linha)</label><textarea id="d-pessoas" rows="2">${esc(d.pessoas.join('\n'))}</textarea>
     <label for="d-obs">Providências e observações</label><textarea id="d-obs" rows="3">${esc(d.obs)}</textarea>
-    ${abs.length ? `<h2 class="sec-tit">Abordagens com a mesma placa</h2><ul class="lista">${abs.map(a => `<li><a href="#/ab/${a.id}"><div class="nome">${esc(a.veiculo.placa)} · ${esc(nomeProprio(a.condutor?.nome) || 'Condutor não identificado')}</div>
+    <h2 class="sec-tit">Anexos</h2><div id="anexos" class="fotos"></div>
+    <label class="btn sec" for="d-anx">Anexar foto ou vídeo</label><input id="d-anx" type="file" accept="image/*,video/*" multiple hidden>
+    <p class="muted peq">O app reduz as fotos. Os vídeos ficam no tamanho original, até 50 MB cada.</p>
+    ${abs.length ? `<h2 class="sec-tit">Abordagens ligadas</h2><ul class="lista">${abs.map(a => `<li><a href="#/ab/${a.id}"><div class="nome">${esc(a.veiculo.placa)} · ${esc(nomeProprio(a.condutor?.nome) || 'Condutor não identificado')}</div>
       <div class="info">${fmtData(a.data)} · ${esc([a.local, a.municipio].filter(Boolean).join(', '))}</div></a></li>`).join('')}</ul>` : ''}
-    <p><button id="b-den" type="button">Salvar denúncia</button></p>
+    <p class="linha"><button id="b-den" type="button">Salvar denúncia</button>${ex ? `<a class="btn sec" href="#/ab/novo?den=${d.id}">Nova abordagem desta denúncia</a>` : ''}</p>
     ${ex ? '<details><summary>Apagar denúncia</summary><p><button type="button" id="b-apagar-den" class="perigo">Apagar esta denúncia</button></p></details>' : ''}</div>`;
+  const anexos = () => {
+    $('#anexos').innerHTML = d.anexos.map((x, i) => `<div class="foto">${x.tipo === 'video' ? `<video data-anx="${x.id}" controls preload="metadata"></video>` : `<img data-anx="${x.id}" alt="Anexo ${i + 1}">`}
+      <div><b>Anexo ${i + 1}</b> <span class="muted peq">${x.tipo === 'video' ? 'vídeo' : 'foto'}</span>
+        <input data-leg-anx="${x.id}" placeholder="Legenda: o que o anexo mostra" value="${esc(x.legenda)}">
+        <button type="button" class="sec" data-rmanx="${x.id}">Remover</button></div></div>`).join('');
+    $('#anexos').querySelectorAll('[data-anx]').forEach(el => urlFoto(el.dataset.anx, d.anexos.find(x => x.id === el.dataset.anx).mime).then(u => { el.src = u; }));
+  };
+  $('#anexos').oninput = e => { const x = d.anexos.find(a => a.id === e.target.dataset.legAnx); if (x) x.legenda = e.target.value; };
+  $('#anexos').onclick = e => {
+    const id = e.target.dataset.rmanx;
+    if (!id || !confirm('Remover este anexo?')) return;
+    d.anexos = d.anexos.filter(x => x.id !== id); novas.delete(id); anexos();
+  };
+  $('#d-anx').onchange = async e => {
+    const fs = [...e.target.files]; e.target.value = '';
+    const grandes = fs.filter(f => f.type.startsWith('video/') && f.size > 50e6);
+    await ocupado(async () => { for (const f of fs) {
+      if (grandes.includes(f)) continue;
+      const video = f.type.startsWith('video/'), blob = video ? f : await reduzir(f), id = novoId();
+      novas.set(id, blob); urlsFoto.set(id, Promise.resolve(URL.createObjectURL(blob)));
+      d.anexos.push({ id, tipo: video ? 'video' : 'foto', mime: video ? f.type || 'video/mp4' : 'image/jpeg', legenda: '' });
+    } }, 'Processando os anexos').catch(() => aviso('Não foi possível ler o arquivo.', 'erro'));
+    if (grandes.length) aviso(`Vídeo com mais de 50 MB não foi anexado: ${grandes.map(f => f.name).join(', ')}.`, 'erro');
+    anexos();
+  };
+  anexos();
+  sairSemSalvar = () => novas.size > 0 && !confirm('Há anexos não salvos. Sair sem salvar?');
   $('#b-den').onclick = async () => {
     Object.assign(d, { data: $('#d-data').value, situacao: $('#d-sit').value, tipo: $('#d-tipo').value, origem: $('#d-orig').value,
       municipio: $('#d-mun').value.trim(), local: $('#d-local').value.trim(), descricao: $('#d-desc').value.trim(),
       placas: separar($('#d-placas').value).map(x => soAlnum(x).toUpperCase()), pessoas: separar($('#d-pessoas').value), obs: $('#d-obs').value.trim(), atualizadoEm: agora() });
     d.criadoEm ||= agora();
-    const i = db.cfg.denuncias.findIndex(x => x.id === d.id);
-    if (i >= 0) db.cfg.denuncias[i] = d; else db.cfg.denuncias.push(d);
-    await salvar(); aviso('Denúncia salva.');
+    const ids = new Set(d.anexos.map(x => x.id));
+    await ocupado(async () => {
+      await gravarFotosNovas(novas, ids);
+      const i = db.cfg.denuncias.findIndex(x => x.id === d.id);
+      if (i >= 0) db.cfg.denuncias[i] = d; else db.cfg.denuncias.push(d);
+      await salvar();
+      await apagarFotos([...salvas].filter(fid => !ids.has(fid)));
+    }, 'Salvando');
+    novas.clear(); salvas = ids; aviso('Denúncia salva.');
     if (ex) telaDenuncia(d.id); else location.hash = '#/denuncia/' + d.id;
   };
   if (ex) $('#b-apagar-den').onclick = async () => {
     if (!confirm('Apagar esta denúncia?')) return;
-    db.cfg.denuncias = db.cfg.denuncias.filter(x => x.id !== d.id); await salvar(); location.hash = '#/denuncias';
+    db.cfg.denuncias = db.cfg.denuncias.filter(x => x.id !== d.id); await salvar(); await apagarFotos([...salvas]);
+    novas.clear(); location.hash = '#/denuncias';
   };
 }
 
@@ -275,16 +330,20 @@ async function imprimir(html) {
   print();
 }
 
-function telaAbordagem(id) {
-  const ex = db.abordagens[id];
+function telaAbordagem(rota) {
+  const [id, q] = rota.split('?'), ex = db.abordagens[id];
   if (id !== 'novo' && !ex) { app.innerHTML = '<div class="card"><p>Abordagem não encontrada.</p><p><a href="#/">Voltar</a></p></div>'; return; }
   const A = ex ? structuredClone(ex) : novaAbordagem();
   A.fotos ??= [];
+  // Aberta a partir de uma denúncia: já vem com município, local e a primeira placa.
+  const den = !ex && (db.cfg.denuncias || []).find(d => d.id === new URLSearchParams(q || '').get('den'));
+  if (den) Object.assign(A, { denunciaId: den.id, municipio: den.municipio || A.municipio, local: den.local }, { veiculo: { ...A.veiculo, placa: den.placas[0] || '' } });
   const novas = new Map(); // fotos ainda não gravadas: id -> Blob
   let salvas = new Set(A.fotos.map(x => x.id));
   let alterado = false;
   app.innerHTML = `<form id="fa" autocomplete="off">
     <div class="card"><p class="peq"><a href="#/">← Abordagens</a></p><h1>${ex ? 'Abordagem' : 'Nova abordagem'}</h1>
+      ${A.denunciaId ? `<p class="peq"><a href="#/denuncia/${esc(A.denunciaId)}">Abordagem aberta a partir de uma denúncia</a></p>` : ''}
       <div class="grade">${txt('data', 'Data e hora', ' type="datetime-local"')}${txt('municipio', 'Município', ' list="muns"')}
         <div style="grid-column:1/-1">${txt('local', 'Local', ' placeholder="Ex.: Tuia, margem da Lagoa do Gentil"')}</div></div>
       <div class="linha" style="margin-top:6px"><button class="sec" id="b-gps" type="button">Registrar GPS</button><span id="gps" class="muted peq"></span></div>
@@ -499,7 +558,7 @@ function telaAbordagem(id) {
     if (!confirm('Apagar esta abordagem?')) return;
     delete db.abordagens[A.id];
     await tx('abordagens', 'readwrite', s => s.delete(A.id));
-    if (salvas.size) await tx('fotos', 'readwrite', s => salvas.forEach(fid => s.delete(fid)));
+    await apagarFotos([...salvas]);
     await salvarCom('Abordagem apagada.');
     alterado = false; location.hash = '#/';
   });
@@ -508,14 +567,12 @@ function telaAbordagem(id) {
     A.atualizadoEm = agora();
     // Fotos novas antes da abordagem (ela nunca aponta para foto inexistente); as removidas, depois.
     const ids = new Set(A.fotos.map(x => x.id));
-    const put = await Promise.all([...novas].filter(([fid]) => ids.has(fid)).map(async ([fid, b]) => [fid, await cifrarBytes(chave, await b.arrayBuffer())]));
-    if (put.length) await tx('fotos', 'readwrite', s => put.forEach(([fid, r]) => s.put(r, fid)));
+    await gravarFotosNovas(novas, ids);
     db.abordagens[A.id] = structuredClone(A);
     sujosAb.add(A.id);
     if (A.municipio) gravarPref('fdunas-mun', A.municipio);
     await salvar();
-    const del = [...salvas].filter(fid => !ids.has(fid));
-    if (del.length) await tx('fotos', 'readwrite', s => del.forEach(fid => s.delete(fid)));
+    await apagarFotos([...salvas].filter(fid => !ids.has(fid)));
     novas.clear(); salvas = ids;
     alterado = false;
     if (!ex) { history.replaceState(null, '', `#/ab/${A.id}`); hashAtual = location.hash; }
@@ -580,7 +637,7 @@ function telaDados() {
     <details class="card card-dobra"><summary><h2>Backup</h2></summary><p class="muted peq">Os dados existem só neste aparelho. O backup sai criptografado com a sua senha.${db.cfg.ultimoBackup ? ` Último: ${fmtData(db.cfg.ultimoBackup)}.` : ''}</p>
       <div class="linha"><button class="sec" id="b-exp" type="button">Baixar backup</button><button class="sec" id="b-nuvem" type="button">Enviar para a nuvem</button>
         <label class="btn sec" for="f-bak">Importar backup</label><input id="f-bak" type="file" accept="application/json,.json" hidden></div>
-      <label class="chk"><input type="checkbox" id="bk-fotos" checked> Incluir as fotos no backup (arquivo maior)</label>
+      <label class="chk"><input type="checkbox" id="bk-fotos" checked> Incluir fotos e anexos no backup (arquivo maior)</label>
       <p id="m-bak" class="msg peq"></p>
       <details><summary>Apagar todos os dados deste aparelho</summary><p><button id="b-zerar" class="perigo" type="button">Apagar tudo</button></p></details></details>`;
   const verLogos = () => {
@@ -627,7 +684,8 @@ function telaDados() {
       const c = await cifrar(chave, salt, db);
       if (comFotos) {
         c.fotos = {};
-        for (const id of Object.values(db.abordagens).flatMap(a => (a.fotos || []).map(x => x.id))) {
+        const ids = [...Object.values(db.abordagens).flatMap(a => (a.fotos || []).map(x => x.id)), ...(db.cfg.denuncias || []).flatMap(d => (d.anexos || []).map(x => x.id))];
+        for (const id of ids) {
           const r = await tx('fotos', 'readonly', s => s.get(id));
           if (r) c.fotos[id] = { iv: b64(r.iv), ct: b64(r.ct) };
         }
