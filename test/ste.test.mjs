@@ -30,5 +30,5 @@ test('pendências: uma instrução no imperativo', () => {
   const ps = cenarios.flatMap(a => { const ms = checar(a); return pendenciasDe({ ...a, providencias: [{ tipo: 'BO/TC' }], notificacao: {} },
     { motivos: ms, crimes: crimesDe(ms), rito: rito(ms) }); });
   assert.ok(ps.length >= 6);
-  for (const p of ps) assert.match(p.texto, /^(Identifique|Informe|Faça|Complete|Peça|Fotografe) [^.]*\.$/, p.texto);
+  for (const p of ps) assert.match(p.texto, /^(Identifique|Informe|Faça|Complete|Peça|Fotografe|Confira) [^.]*\.$/, p.texto);
 });

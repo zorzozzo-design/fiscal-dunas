@@ -1,6 +1,6 @@
 const { FEICOES, areasDoPonto, checar, rito, crimesDe, agravantes, basesApreensao, CRIMES, GUIA, METODOS_PREAMAR } = window.Normas;
 const { NOTIF_ABERTURA, DESTINOS, descVeiculo, motivoSugerido, notificacao, termoApreensao, autoConstatacao, historicoBO, pendenciasDe, lembreteBackup, relatorioFotografico, fotoInfo,
-  notificacaoTermica, termoTermico, autoTermico } = window.Docs;
+  notificacaoTermica, termoTermico, autoTermico, numerar, resumoPeriodo, csvAbordagens } = window.Docs;
 const { lerExif } = window.Fotos;
 const { lerCamada, consultar } = window.Camadas;
 
@@ -162,7 +162,7 @@ function calcular(A) {
 
 // ---------- lista de abordagens ----------
 const filtro = { q: '' };
-const abas = aba => `<div class="abas-seg">${[['lista', '#/', 'Abordagens'], ['den', '#/denuncias', 'Denúncias']]
+const abas = aba => `<div class="abas-seg">${[['lista', '#/', 'Abordagens'], ['den', '#/denuncias', 'Denúncias'], ['rel', '#/relatorio', 'Relatório']]
   .map(([k, h, t]) => `<a href="${h}" class="${aba === k ? 'ativo' : ''}">${t}</a>`).join('')}</div>`;
 
 // ---------- denúncias ----------
@@ -170,6 +170,39 @@ const TIPOS_DEN = ['Veículo em duna ou restinga', 'Evento off-road', 'Extraçã
 const ORIGENS_DEN = ['190', 'Disque-denúncia', 'WhatsApp', 'Pessoalmente', 'Outro órgão', 'Outra'];
 const SITUACOES_DEN = ['Nova', 'Em apuração', 'Atendida', 'Improcedente'];
 const separar = s => String(s || '').split(/[,;\n]/).map(x => x.trim()).filter(Boolean);
+// ---------- relatório do período ----------
+function telaRelatorio() {
+  const hoje = hojeIso();
+  filtro.de ||= hoje.slice(0, 8) + '01'; filtro.ate ||= hoje;
+  app.innerHTML = `<div class="card">${abas('rel')}<h1>Relatório</h1>
+    <div class="grade"><div><label for="r-de">De</label><input id="r-de" type="date" value="${esc(filtro.de)}"></div>
+      <div><label for="r-ate">Até</label><input id="r-ate" type="date" value="${esc(filtro.ate)}"></div></div>
+    <div id="r-res"></div>
+    <p><button id="r-csv" type="button" class="sec">Baixar planilha (CSV)</button></p>
+    <p class="muted peq">A planilha sai sem criptografia, com nomes e CPF. Guarde o arquivo em local seguro.</p></div>`;
+  const noPeriodo = d => d >= filtro.de && d <= filtro.ate;
+  const itens = () => Object.values(db.abordagens).filter(a => noPeriodo(a.data.slice(0, 10))).sort((a, b) => a.data.localeCompare(b.data))
+    .map(ab => { const r = calcular(ab); return { ab, crimes: r.crimes.map(c => c.id), rito: r.rito.rito || '' }; });
+  const tabela = (linhas, vazio) => linhas.length ? `<table class="tab-rel">${linhas.map(([a, b]) => `<tr><td>${esc(a)}</td><td>${b}</td></tr>`).join('')}</table>`
+    : `<p class="muted peq">${vazio}</p>`;
+  const desenhar = () => {
+    filtro.de = $('#r-de').value; filtro.ate = $('#r-ate').value;
+    const s = resumoPeriodo(itens()), dens = (db.cfg.denuncias || []).filter(d => noPeriodo(d.data || '')).length;
+    $('#r-res').innerHTML = tabela([['Abordagens', s.total], ['Com crime', s.comCrime], ['Notificações', s.notificacoes], ['Apreensões', s.apreensoes], ['Denúncias recebidas', dens]], '')
+      + `<h2 class="sec-tit">Crimes</h2>${tabela(s.porCrime.map(([k, n]) => [CRIMES[k]?.[0] || k, n]), 'Nenhum crime no período.')}`
+      + `<h2 class="sec-tit">Abordagens por município</h2>${tabela(s.porMunicipio, 'Nenhuma abordagem no período.')}`;
+  };
+  $('#r-de').onchange = $('#r-ate').onchange = desenhar;
+  desenhar();
+  $('#r-csv').onclick = () => {
+    const it = itens();
+    if (!it.length) return aviso('Nenhuma abordagem no período.', 'erro');
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([csvAbordagens(it)], { type: 'text/csv;charset=utf-8' })),
+      download: `fiscal-dunas-${filtro.de}-a-${filtro.ate}.csv` });
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+}
+
 function telaDenuncias() {
   const ds = (db.cfg.denuncias ||= []).slice().sort((a, b) => (b.data || '').localeCompare(a.data || ''));
   app.innerHTML = `<div class="card">${abas('den')}<div class="linha" style="justify-content:space-between"><h1>Denúncias</h1><a class="btn" href="#/denuncia/novo">Nova denúncia</a></div>
@@ -275,10 +308,11 @@ function telaAbordagens() {
   const desenhar = () => {
     const q = semAcento(filtro.q).trim(), qn = soAlnum(filtro.q);
     const as = todas.filter(a => !q || semAcento([a.condutor?.nome, a.proprietario?.nome, a.municipio, a.local].join(' ')).includes(q)
-      || (qn.length >= 3 && [a.veiculo?.placa, a.veiculo?.chassi, a.condutor?.cpf, a.proprietario?.cpf].some(x => soAlnum(x).includes(qn))));
+      || (qn.length >= 3 && [a.veiculo?.placa, a.veiculo?.chassi, a.condutor?.cpf, a.proprietario?.cpf, a.numero].some(x => soAlnum(x).includes(qn))));
     $('#cont').textContent = `${as.length} de ${todas.length} abordagens`;
     $('#lista').innerHTML = as.map(a => { const r = calcular(a); return `<li><a href="#/ab/${a.id}">
       <div class="nome">${esc(nomeProprio(a.condutor?.nome) || 'Condutor não identificado')}${a.veiculo?.placa ? ` · ${esc(a.veiculo.placa)}` : ''}</div>
+      ${a.numero ? `<div class="info">Nº ${esc(a.numero)}</div>` : ''}
       <div class="info">${fmtData(a.data)} ${esc(a.data.slice(11, 16))} · ${esc([a.local, a.municipio].filter(Boolean).join(', '))} · ${esc(a.veiculo?.tipo || '')}</div>
       <span class="tag sem-${r.cor}">${COR_TXT[r.cor]}</span>${r.rito.rito ? `<span class="tag">${r.rito.rito}</span>` : ''}${a.apreensao ? '<span class="tag">Apreensão</span>' : ''}
       ${r.pend.length ? `<span class="tag aviso">${r.pend.length} pendência(s)</span>` : ''}</a></li>`; }).join('')
@@ -353,7 +387,7 @@ function telaAbordagem(rota) {
   let salvas = new Set(A.fotos.map(x => x.id));
   let alterado = false;
   app.innerHTML = `<form id="fa" autocomplete="off">
-    <div class="card"><p class="peq"><a href="#/">← Abordagens</a></p><h1>${ex ? 'Abordagem' : 'Nova abordagem'}</h1>
+    <div class="card"><p class="peq"><a href="#/">← Abordagens</a></p><h1>${ex ? 'Abordagem' : 'Nova abordagem'}</h1>${A.numero ? `<p class="muted peq" id="ab-num">Nº ${esc(A.numero)}</p>` : ''}
       ${A.denunciaId ? `<p class="peq"><a href="#/denuncia/${esc(A.denunciaId)}">Abordagem aberta a partir de uma denúncia</a></p>` : ''}
       <div class="grade">${txt('data', 'Data e hora', ' type="datetime-local"')}${txt('municipio', 'Município', ' list="muns"')}
         <div style="grid-column:1/-1">${txt('local', 'Local', ' placeholder="Ex.: Tuia, margem da Lagoa do Gentil"')}</div></div>
@@ -553,7 +587,8 @@ function telaAbordagem(rota) {
     try { await navigator.clipboard.writeText(A.fatos || historicoBO(A, calcular(A))); aviso('Histórico copiado.'); } catch { aviso('Não foi possível copiar.', 'erro'); }
   };
   $('#fmt-doc').onchange = e => gravarPref('fdunas-fmt', e.target.value);
-  f.querySelectorAll('[data-doc]').forEach(b => b.onclick = () => {
+  f.querySelectorAll('[data-doc]').forEach(b => b.onclick = async () => {
+    if (!A.numero) await ocupado(gravar, 'Salvando'); // documento impresso sempre tem número
     const r = calcular(A), t = b.dataset.doc;
     // Térmica: a mesma informação, em uma coluna (docs.js). O Relatório fotográfico fica sempre em A4.
     const mm = $('#fmt-doc').value === 'Impressora térmica' ? (db.cfg.termicaMm || 58) : 0;
@@ -581,6 +616,8 @@ function telaAbordagem(rota) {
   $('#ba-cor').onclick = () => $('#enq').scrollIntoView({ behavior: 'smooth' });
   const gravar = async () => {
     A.atualizadoEm = agora();
+    // O número nasce no primeiro salvamento e nunca muda.
+    if (!A.numero) A.numero = numerar(db.cfg, db.abordagens, A.data.slice(0, 4), db.cfg.agente?.idFunc);
     // Fotos novas antes da abordagem (ela nunca aponta para foto inexistente); as removidas, depois.
     const ids = new Set(A.fotos.map(x => x.id));
     await gravarFotosNovas(novas, ids);
@@ -592,6 +629,7 @@ function telaAbordagem(rota) {
     novas.clear(); salvas = ids;
     alterado = false;
     if (!ex) { history.replaceState(null, '', `#/ab/${A.id}`); hashAtual = location.hash; }
+    if (!$('#ab-num')) $('#app h1').insertAdjacentHTML('afterend', `<p class="muted peq" id="ab-num">Nº ${esc(A.numero)}</p>`);
     $('#m-ab').textContent = `Salva às ${new Date().toTimeString().slice(0, 5)}`;
   };
   $('#b-salvar').onclick = async () => { await ocupado(gravar, 'Salvando'); aviso('Abordagem salva.'); };
@@ -624,6 +662,7 @@ function mesclarBackup(outro) {
     if (!a || (b.atualizadoEm || '') > (a.atualizadoEm || '')) { db.abordagens[id] = b; sujosAb.add(id); n++; }
   }
   db.cfg.semConvenio = [...new Set([...(db.cfg.semConvenio || []), ...(outro.cfg?.semConvenio || [])])];
+  for (const [ano, n] of Object.entries(outro.cfg?.numeracao || {})) (db.cfg.numeracao ||= {})[ano] = Math.max(db.cfg.numeracao[ano] || 0, n);
   for (const x of outro.cfg?.denuncias || []) { // vale a versão editada por último
     const l = (db.cfg.denuncias ||= []), i = l.findIndex(y => y.id === x.id);
     if (i < 0) { l.push(x); n++; } else if ((x.atualizadoEm || '') > (l[i].atualizadoEm || '')) { l[i] = x; n++; }
@@ -755,9 +794,10 @@ function rotear() {
   hashAtual = location.hash; sairSemSalvar = () => false; salvarPendente = () => {};
   document.body.classList.remove('com-barra');
   const h = location.hash;
-  const secao = /^#\/(ab\/|denuncia)/.test(h) ? '#/' : h || '#/';
+  const secao = /^#\/(ab\/|denuncia|relatorio)/.test(h) ? '#/' : h || '#/';
   document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('ativo', a.getAttribute('href') === secao));
   if (h === '#/denuncias') return telaDenuncias();
+  if (h === '#/relatorio') return telaRelatorio();
   if (h.startsWith('#/denuncia/')) return telaDenuncia(h.slice(11));
   if (h.startsWith('#/ab/')) return telaAbordagem(h.slice(5));
   if (h === '#/guia') return telaGuia();

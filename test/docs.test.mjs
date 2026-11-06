@@ -8,7 +8,7 @@ const { notificacao, termoApreensao, autoConstatacao, historicoBO, pendenciasDe,
 const ab = {
   data: '2026-11-08T16:20', municipio: 'Cidreira', local: 'Lençóis Cidreirenses, margem da Lagoa da Fortaleza', gps: { lat: -30.12, lon: -50.2 },
   lugar: { via: false, feicoes: ['Campo de dunas móveis'], fixadora: true },
-  veiculo: { tipo: 'UTV ou ATV', marca: 'Polaris', modelo: 'RZR', cor: 'Vermelho', semPlaca: true, chassi: '3NSABC' },
+  veiculo: { tipo: 'UTV ou ATV', marca: 'Polaris', modelo: 'RZR', cor: 'Vermelho', semPlaca: true, chassi: '3NSVDE997PF123456' },
   condutor: { nome: 'FULANO DE TAL', cpf: '12345678909', cnhSit: 'Regular', cnhCat: 'B', nascimento: '1985-02-02' },
   proprietario: { mesmo: true }, dano: { vegetacao: 'Herbácea', areaM2: 35 }, condutas: {},
   providencias: [{ tipo: 'BO/TC', numero: '' }], apreensao: { base: 'penal', valor: 0, fiel: {} }, notificacao: { motivo: 'Trafegar sobre vegetação fixadora.' },

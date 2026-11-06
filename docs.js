@@ -19,13 +19,14 @@ const descVeiculo = v => [v.tipo, [v.marca, v.modelo].filter(Boolean).join(' '),
 const local = ab => [ab.local, ab.municipio].filter(Boolean).join(', ');
 const coords = ab => ab.gps ? `Latitude ${num(ab.gps.lat.toFixed(5))}, longitude ${num(ab.gps.lon.toFixed(5))} (WGS 84)` : 'não registradas';
 
-const cabecalho = (cfg, titulo) => `
+const nDoc = (ab, tipo) => ab.numero ? `${ab.numero}/${tipo}` : '';
+const cabecalho = (cfg, titulo, numero = '') => `
   <table class="doc-cab"><tr>
     <td class="doc-logo">${cfg.logos?.brasao ? `<img src="${esc(cfg.logos.brasao)}" alt="">` : ''}</td>
     <td class="doc-orgao">ESTADO DO RIO GRANDE DO SUL<br>SECRETARIA DE SEGURANÇA PÚBLICA<br>BRIGADA MILITAR<br>COMANDO DE POLÍCIA AMBIENTAL DA BRIGADA MILITAR</td>
     <td class="doc-logo">${cfg.logos?.comando ? `<img src="${esc(cfg.logos.comando)}" alt="">` : ''}</td>
   </tr></table>
-  <div class="doc-titulo">${titulo}</div>`;
+  <div class="doc-titulo">${titulo}</div>${numero ? `<div class="doc-num">Nº ${esc(numero)}</div>` : ''}`;
 const campo = (rot, val, cls = '') => `<td class="${cls}"><span class="doc-rot">${rot}</span> ${esc(val)}</td>`;
 const agente = (cfg, titulo) => { const ag = cfg.agente || {}; return `<div class="doc-faixa">${titulo}</div>
   <table class="doc-grade"><tr>${campo('Nome:', ag.nome, 'doc-largo')}${campo('Id Func.:', ag.idFunc)}</tr>
@@ -49,7 +50,7 @@ const NOTIF_ABERTURA = 'Tendo em vista os princípios da precaução e da preven
 function notificacao(ab, cfg) {
   const n = ab.notificacao || {}, p = ab.condutor || {};
   return `<div class="doc">
-    ${cabecalho(cfg, 'NOTIFICAÇÃO AMBIENTAL')}
+    ${cabecalho(cfg, 'NOTIFICAÇÃO AMBIENTAL', nDoc(ab, 'N'))}
     <table class="doc-grade"><tr>${campo('Data:', dataBr(ab.data))}${campo('Hora:', ab.data.slice(11, 16))}</tr></table>
     <table class="doc-grade"><tr>${campo('Nome ou razão social do(a) notificado(a):', nomeProprio(p.nome))}</tr></table>
     <table class="doc-grade"><tr>${campo('CPF / CNPJ:', fmtCpf(p.cpf))}${campo('RG:', p.rg)}${campo('Telefone:', p.telefone)}</tr></table>
@@ -73,7 +74,7 @@ const BASES = { penal: 'instrumento de crime (CPP, art. 6º, II; Lei 9.605/98, a
 function termoApreensao(ab, cfg) {
   const a = ab.apreensao, f = a.fiel || {}, p = ab.condutor || {}, v = ab.veiculo || {};
   return `<div class="doc">
-    ${cabecalho(cfg, 'TERMO DE APREENSÃO E FIEL DEPOSITÁRIO')}
+    ${cabecalho(cfg, 'TERMO DE APREENSÃO E FIEL DEPOSITÁRIO', nDoc(ab, 'T'))}
     <div class="doc-faixa">APREENSÃO</div>
     <p class="doc-texto">Em decorrência da lavratura do ${marca(a.docTipo === 'BO/TC-COP')}BO/TC-COP / ${marca(a.docTipo === 'BA')}BA nº <b>${esc(a.docNumero) || linha(15)}</b>,
       que consta como responsável pelos fatos constatados o(a) Sr(a) <b>${esc(nomeProprio(p.nome))}</b>${p.cpf ? `, CPF <b>${esc(fmtCpf(p.cpf))}</b>` : ''},
@@ -104,7 +105,7 @@ function autoConstatacao(ab, cfg, r) {
   const p = ab.condutor || {}, o = ab.proprietario || {}, d = ab.dano || {};
   const enq = r.motivos.filter(m => m.nivel === 'vermelho' && m.enquadramento.startsWith('Infração')).map(m => m.enquadramento);
   return `<div class="doc">
-    ${cabecalho(cfg, 'AUTO DE CONSTATAÇÃO')}
+    ${cabecalho(cfg, 'AUTO DE CONSTATAÇÃO', nDoc(ab, 'A'))}
     <div class="doc-faixa">QUALIFICAÇÃO DO AUTUADO (CONDUTOR)</div>${pessoa(p)}
     ${!o.mesmo && o.nome ? `<div class="doc-faixa">PROPRIETÁRIO DO VEÍCULO</div>${pessoa(o)}` : ''}
     <div class="doc-faixa">DATA E LOCAL</div>
@@ -145,11 +146,12 @@ const agenteT = (cfg, titulo) => { const ag = cfg.agente || {};
 const pessoaT = p => [T.campo('Nome', nomeProprio(p.nome)), T.campo('CPF', fmtCpf(p.cpf)), T.campo('RG', p.rg), T.campo('Telefone', p.telefone),
   T.campo('Endereço', p.endereco), T.campo('Bairro', p.bairro), T.campo('Município/UF', p.municipio), T.campo('CNH', [p.cnh, p.cnhCat].filter(Boolean).join(' cat. '))].join('');
 const recusaT = ab => ab.recusaAssinatura ? T.texto('<b>O autuado recusou-se a assinar</b> (Lei 15.434/2020, art. 113, §1º).') : '';
+const numT = (ab, tipo) => ab.numero ? T.campo('Número', nDoc(ab, tipo)) : '';
 const dataHoraT = ab => T.campo('Data', dataBr(ab.data)) + T.campo('Hora', ab.data.slice(11, 16));
 
 function notificacaoTermica(ab, cfg) {
   const n = ab.notificacao || {}, p = ab.condutor || {};
-  return termica([T.cab(), T.tit('NOTIFICAÇÃO AMBIENTAL'), dataHoraT(ab),
+  return termica([T.cab(), T.tit('NOTIFICAÇÃO AMBIENTAL'), numT(ab, 'N'), dataHoraT(ab),
     T.sec('NOTIFICADO(A)'), T.campo('Nome ou razão social', nomeProprio(p.nome)), T.campo('CPF / CNPJ', fmtCpf(p.cpf)), T.campo('RG', p.rg),
     T.campo('Telefone', p.telefone), T.campo('Endereço', p.endereco), T.campo('Bairro', p.bairro), T.campo('Município', p.municipio),
     T.sec('MOTIVO'), T.texto(`<b>${NOTIF_ABERTURA}</b>`), T.campo('Motivo', n.motivo),
@@ -163,7 +165,7 @@ function notificacaoTermica(ab, cfg) {
 
 function termoTermico(ab, cfg) {
   const a = ab.apreensao, f = a.fiel || {}, p = ab.condutor || {}, o = ab.proprietario || {};
-  return termica([T.cab(), T.tit('TERMO DE APREENSÃO E FIEL DEPOSITÁRIO'), dataHoraT(ab),
+  return termica([T.cab(), T.tit('TERMO DE APREENSÃO E FIEL DEPOSITÁRIO'), numT(ab, 'T'), dataHoraT(ab),
     T.sec('APREENSÃO'), T.campo('Documento', a.docNumero ? `${a.docTipo || 'BO/TC-COP'} nº ${a.docNumero}` : ''),
     T.campo('Responsável pelos fatos', nomeProprio(p.nome)), T.campo('CPF', fmtCpf(p.cpf)),
     T.campo('Bem apreendido', `${descVeiculo(ab.veiculo || {})} (1 un)`), T.campo('Valor de avaliação', `${reais(a.valor)} (Dec. RS 55.374/2020, art. 135, §1º)`),
@@ -181,7 +183,7 @@ function termoTermico(ab, cfg) {
 function autoTermico(ab, cfg, r) {
   const p = ab.condutor || {}, o = ab.proprietario || {}, d = ab.dano || {}, l = ab.lugar || {};
   const enq = r.motivos.filter(m => m.nivel === 'vermelho' && m.enquadramento.startsWith('Infração')).map(m => m.enquadramento);
-  return termica([T.cab(), T.tit('AUTO DE CONSTATAÇÃO'),
+  return termica([T.cab(), T.tit('AUTO DE CONSTATAÇÃO'), numT(ab, 'A'),
     T.sec('QUALIFICAÇÃO DO AUTUADO (CONDUTOR)'), pessoaT(p),
     !o.mesmo && o.nome ? T.sec('PROPRIETÁRIO DO VEÍCULO') + pessoaT(o) : '',
     T.sec('DATA E LOCAL'), dataHoraT(ab), T.campo('Município', ab.municipio), T.campo('Local', ab.local), T.campo('Coordenadas', coords(ab)),
@@ -203,7 +205,7 @@ const fotoInfo = x => [x.data ? `${dataBr(x.data)} ${x.data.slice(11, 16)}` : 'd
   x.gps ? `${num(x.gps.lat.toFixed(5))}, ${num(x.gps.lon.toFixed(5))}${x.gps.precisaoM ? ` (±${x.gps.precisaoM} m)` : ''} (WGS 84), ${ORIGEM[x.origem] || ''}` : 'sem coordenadas'].join(' · ');
 function relatorioFotografico(ab, cfg) {
   return `<div class="doc">
-    ${cabecalho(cfg, 'RELATÓRIO FOTOGRÁFICO')}
+    ${cabecalho(cfg, 'RELATÓRIO FOTOGRÁFICO', nDoc(ab, 'F'))}
     <table class="doc-grade"><tr>${campo('Data:', dataBr(ab.data))}${campo('Hora:', ab.data.slice(11, 16))}${campo('Município:', ab.municipio)}</tr>
       <tr><td colspan="3"><span class="doc-rot">Local:</span> ${esc(ab.local)}<br><span class="doc-rot">Coordenadas da abordagem:</span> ${esc(coords(ab))}<br>
         <span class="doc-rot">Veículo:</span> ${esc(descVeiculo(ab.veiculo || {}))}</td></tr></table>
@@ -235,6 +237,13 @@ function pendenciasDe(ab, r) {
   const out = [], feitas = new Set(ab.resolvidas || []), p = ab.condutor || {};
   const add = (k, texto) => { if (!feitas.has(k)) out.push({ chave: k, texto }); };
   if (!p.nome) add('pessoa', 'Identifique o condutor.');
+  // Conferência: só avisa (o documento pode estar ilegível); o agente dispensa a pendência se o dado estiver certo.
+  const o = ab.proprietario || {}, v = ab.veiculo || {}, f = ab.apreensao?.fiel || {};
+  if (p.cpf && !cpfValido(p.cpf)) add('cpf', 'Confira o CPF do condutor, porque os dígitos verificadores não batem.');
+  if (!o.mesmo && o.cpf && !cpfValido(o.cpf)) add('cpf-prop', 'Confira o CPF do proprietário, porque os dígitos verificadores não batem.');
+  if (f.cpf && !cpfValido(f.cpf)) add('cpf-fiel', 'Confira o CPF do fiel depositário, porque os dígitos verificadores não batem.');
+  if (v.placa && !placaValida(v.placa)) add('placa', 'Confira a placa, que não segue o padrão antigo nem o Mercosul.');
+  if (v.chassi && !chassiValido(v.chassi)) add('chassi', 'Confira o chassi, que precisa ter 17 caracteres sem I, O ou Q.');
   if ((ab.lugar?.feicoes || []).includes('Duna frontal') && (!ab.dano?.vegetacao || ab.dano.vegetacao === 'Nenhuma')) add('vegetacao', 'Informe a vegetação atingida.');
   if (globalThis.Normas.classificar(ab.lugar).app.some(a => a[0] === 'D04') && !ab.lugar.distMetodo) add('medicao', 'Informe como mediu a distância da preamar.');
   for (const pr of ab.providencias || []) if (PEDE_NUMERO.has(pr.tipo) && !String(pr.numero || '').trim()) add(`num:${pr.tipo}`, `Informe o número do ${pr.tipo}.`);
@@ -257,6 +266,43 @@ function lembreteBackup(ultimo, hoje, temDados) {
   return dias > 7 ? `O último backup tem ${dias} dias. Faça um backup.` : null;
 }
 
+// Numeração: FD-<Id funcional>-<ano>-<sequência>. O contador só sobe (abordagem apagada não devolve o número)
+// e, com backup de outro aparelho, segue do maior número do ano.
+function numerar(cfg, abordagens, ano, idFunc) {
+  const re = new RegExp(`-${ano}-(\\d+)$`);
+  const maior = Math.max(cfg.numeracao?.[ano] || 0, ...Object.values(abordagens).map(a => +((a.numero || '').match(re)?.[1] || 0)));
+  (cfg.numeracao ||= {})[ano] = maior + 1;
+  return `FD-${idFunc || 'SEMID'}-${ano}-${String(maior + 1).padStart(4, '0')}`;
+}
+
+const cpfValido = c => {
+  c = String(c || '').replace(/\D/g, '');
+  if (c.length !== 11 || /^(\d)\1+$/.test(c)) return false;
+  const dv = n => { let s = 0; for (let i = 0; i < n; i++) s += +c[i] * (n + 1 - i); return s * 10 % 11 % 10; };
+  return dv(9) === +c[9] && dv(10) === +c[10];
+};
+const placaValida = p => /^[A-Z]{3}\d[A-Z0-9]\d{2}$/.test(String(p || '').toUpperCase().replace(/[^A-Z0-9]/g, ''));
+const chassiValido = c => /^[A-HJ-NPR-Z0-9]{17}$/.test(String(c || '').toUpperCase().replace(/\s/g, ''));
+
+// Relatório do período: totais, crimes e municípios; itens = [{ ab, crimes: [chaves de CRIMES], rito }].
+const contar = xs => Object.entries(xs.reduce((m, k) => (m[k] = (m[k] || 0) + 1, m), {})).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+const resumoPeriodo = itens => ({
+  total: itens.length, notificacoes: itens.filter(i => i.ab.notificacao).length, apreensoes: itens.filter(i => i.ab.apreensao).length,
+  comCrime: itens.filter(i => i.crimes.length).length, porCrime: contar(itens.flatMap(i => i.crimes)),
+  porMunicipio: contar(itens.map(i => i.ab.municipio || 'Sem município')),
+});
+// CSV no padrão do Excel em português: ponto e vírgula, BOM UTF-8 e quebra de linha CRLF.
+const celula = v => { const s = String(v ?? ''); return /[;"\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+const BASES_CURTAS = { penal: 'Penal', administrativa: 'Administrativa', transito: 'Trânsito' };
+function csvAbordagens(itens) {
+  const CR = globalThis.Normas.CRIMES;
+  const cab = ['Número', 'Data', 'Hora', 'Município', 'Local', 'Placa', 'Veículo', 'Condutor', 'CPF', 'Crimes', 'Rito', 'Apreensão', 'Notificação', 'Fotos'];
+  const linhas = itens.map(({ ab, crimes, rito }) => [ab.numero, dataBr(ab.data), ab.data.slice(11, 16), ab.municipio, ab.local, ab.veiculo?.placa,
+    ab.veiculo?.tipo, nomeProprio(ab.condutor?.nome), fmtCpf(ab.condutor?.cpf), crimes.map(k => CR[k]?.[0] || k).join(' | '), rito,
+    ab.apreensao ? BASES_CURTAS[ab.apreensao.base] || 'Sim' : 'Não', ab.notificacao ? 'Sim' : 'Não', (ab.fotos || []).length]);
+  return '﻿' + [cab, ...linhas].map(l => l.map(celula).join(';')).join('\r\n') + '\r\n';
+}
+
 globalThis.Docs = { NOTIF_ABERTURA, DESTINOS, descVeiculo, motivoSugerido, notificacao, termoApreensao, autoConstatacao, historicoBO, pendenciasDe, lembreteBackup, relatorioFotografico, fotoInfo,
-  notificacaoTermica, termoTermico, autoTermico };
+  notificacaoTermica, termoTermico, autoTermico, numerar, cpfValido, placaValida, chassiValido, resumoPeriodo, csvAbordagens };
 })();

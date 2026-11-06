@@ -1,5 +1,5 @@
-// conteudo: 70e16f27daaa
-const CACHE = 'fdunas-v26';
+// conteudo: 834cc9e4f213
+const CACHE = 'fdunas-v31';
 const ARQUIVOS = ['./', 'index.html', 'app.js', 'normas.js', 'docs.js', 'fotos.js', 'camadas.js', 'style.css', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 // Instala a versão nova baixando tudo do servidor (cache:'reload' ignora a cópia antiga do navegador).
