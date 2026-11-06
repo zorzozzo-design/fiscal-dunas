@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import '../normas.js';
 import '../docs.js';
 const { checar, rito, crimesDe, agravantes } = globalThis.Normas;
-const { notificacao, termoApreensao, autoConstatacao, historicoBO, pendenciasDe, motivoSugerido, NOTIF_ABERTURA, lembreteBackup, relatorioFotografico } = globalThis.Docs;
+const { notificacao, termoApreensao, autoConstatacao, historicoBO, pendenciasDe, motivoSugerido, NOTIF_ABERTURA, lembreteBackup, relatorioFotografico, notificacaoTermica, termoTermico, autoTermico } = globalThis.Docs;
 
 const ab = {
   data: '2026-11-08T16:20', municipio: 'Cidreira', local: 'Lençóis Cidreirenses, margem da Lagoa da Fortaleza', gps: { lat: -30.12, lon: -50.2 },
@@ -98,4 +98,32 @@ test('documentos levam o fato, nunca a orientação ao agente', () => {
 
 test('cabeçalho com o nome atual do Comando (Orientação 002/2025)', () => {
   assert.ok(notificacao(ab, cfg).includes('COMANDO DE POLÍCIA AMBIENTAL DA BRIGADA MILITAR'));
+});
+
+// Impressora térmica: uma coluna; título do campo numa linha, conteúdo na linha de baixo.
+const campoT = (h, rot) => { const m = h.match(new RegExp(`<div class="t-rot">${rot.replace(/[()]/g, '\\$&')}</div><div class="t-val[^"]*">([^<]*)</div>`)); return m && m[1]; };
+test('notificação térmica: uma coluna, título e conteúdo em linhas separadas', () => {
+  const h = notificacaoTermica(ab, cfg);
+  assert.ok(!h.includes('<table'), 'sem tabelas');
+  assert.equal(campoT(h, 'Nome ou razão social'), 'Fulano de Tal');
+  assert.equal(campoT(h, 'CPF / CNPJ'), '123.456.789-09');
+  assert.ok(h.includes(NOTIF_ABERTURA));
+  assert.equal(campoT(h, 'Endereço de comparecimento'), 'Rua X, Tramandaí');
+  assert.match(h, /t-val vazio/, 'campo em branco vira linha para preencher');
+  assert.ok(h.includes('COMANDO DE POLÍCIA AMBIENTAL DA BRIGADA MILITAR'));
+});
+test('termo térmico: bem, valor, base e fiel depositário', () => {
+  const h = termoTermico({ ...ab, apreensao: { base: 'penal', valor: 85000, fiel: { nome: 'Beltrano' } } }, cfg);
+  assert.ok(!h.includes('<table'));
+  assert.match(campoT(h, 'Bem apreendido'), /Polaris RZR/);
+  assert.match(campoT(h, 'Valor de avaliação'), /85\.000,00/);
+  assert.match(campoT(h, 'Base da apreensão'), /art\. 25/);
+  assert.equal(campoT(h, 'Nome do(a) fiel depositário(a)'), 'Beltrano');
+});
+test('auto térmico: qualificação, fatos e enquadramento', () => {
+  const h = autoTermico(ab, cfg, r);
+  assert.ok(!h.includes('<table'));
+  assert.equal(campoT(h, 'Nome'), 'Fulano de Tal');
+  assert.match(h, /art\. 56/);
+  assert.ok(h.includes('Assinatura do autuado'));
 });

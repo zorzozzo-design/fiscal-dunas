@@ -1,5 +1,6 @@
 const { FEICOES, areasDoPonto, checar, rito, crimesDe, agravantes, basesApreensao, CRIMES, GUIA, METODOS_PREAMAR } = window.Normas;
-const { NOTIF_ABERTURA, DESTINOS, descVeiculo, motivoSugerido, notificacao, termoApreensao, autoConstatacao, historicoBO, pendenciasDe, lembreteBackup, relatorioFotografico, fotoInfo } = window.Docs;
+const { NOTIF_ABERTURA, DESTINOS, descVeiculo, motivoSugerido, notificacao, termoApreensao, autoConstatacao, historicoBO, pendenciasDe, lembreteBackup, relatorioFotografico, fotoInfo,
+  notificacaoTermica, termoTermico, autoTermico } = window.Docs;
 const { lerExif } = window.Fotos;
 const { lerCamada, consultar } = window.Camadas;
 
@@ -319,13 +320,23 @@ const posicao = () => new Promise(ok => navigator.geolocation ? navigator.geoloc
   p => ok({ lat: p.coords.latitude, lon: p.coords.longitude, precisaoM: Math.round(p.coords.accuracy) }), () => ok(null),
   { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }) : ok(null));
 
-async function imprimir(html) {
+// bobinaMm: impressora térmica (58 ou 80 mm). A página fica com a largura da bobina e a altura do conteúdo: sai uma tira só.
+async function imprimir(html, bobinaMm = 0) {
   let d = $('#impressao');
   if (!d) { d = Object.assign(document.createElement('div'), { id: 'impressao' }); document.body.appendChild(d); }
   d.innerHTML = html;
   await Promise.all([...d.querySelectorAll('img')].map(i => i.decode().catch(() => {})));
+  $('#pg-termica')?.remove();
+  if (bobinaMm) {
+    d.style.setProperty('--t-larg', `${bobinaMm - 10}mm`);
+    d.style.cssText += ';display:block;position:absolute;left:-9999px';
+    const alturaMm = Math.ceil(d.querySelector('.termica').offsetHeight * 25.4 / 96) + 10;
+    d.style.display = d.style.position = d.style.left = '';
+    document.head.append(Object.assign(document.createElement('style'), { id: 'pg-termica',
+      textContent: `@media print { @page { size: ${bobinaMm}mm ${alturaMm}mm; margin: 5mm 5mm; } }` }));
+  }
   document.body.classList.add('imprimindo');
-  const fim = () => { document.body.classList.remove('imprimindo'); removeEventListener('afterprint', fim); };
+  const fim = () => { document.body.classList.remove('imprimindo'); $('#pg-termica')?.remove(); removeEventListener('afterprint', fim); };
   addEventListener('afterprint', fim);
   print();
 }
@@ -413,11 +424,12 @@ function telaAbordagem(rota) {
       <p><button class="sec" id="b-fatos" type="button">Gerar texto pelo enquadramento</button></p>
       <div class="grade">${txt('atenuantes', 'Atenuantes')}</div>${chk('recusaAssinatura', 'O autuado não quis assinar')}
       <label>Observações</label><textarea data-k="obs" rows="2"></textarea>
+      <label for="fmt-doc">Formato dos documentos</label><select id="fmt-doc">${opcoes(['Folha A4', 'Impressora térmica'], lerPref('fdunas-fmt', 'Folha A4'))}</select>
       <div class="linha" style="margin-top:10px"><button class="sec" type="button" data-doc="notificacao">Notificação</button>
         <button class="sec" type="button" data-doc="termo">Termo de apreensão</button><button class="sec" type="button" data-doc="auto">Auto de Constatação</button>
         <button class="sec" type="button" data-doc="fotos">Relatório fotográfico</button>
         <button class="sec" type="button" id="b-copiar">Copiar histórico</button></div>
-      <p class="muted peq">Para salvar em PDF, toque em "Imprimir". Antes, preencha o agente e os logos em Dados.</p>
+      <p class="muted peq">Para salvar em PDF, toque em "Imprimir". Antes, preencha o agente e os logos em Dados. Na impressora térmica, o Relatório fotográfico sai em A4.</p>
       ${ex ? '<details><summary>Apagar abordagem</summary><p><button type="button" id="b-apagar" class="perigo">Apagar esta abordagem</button></p></details>' : ''}</details>
     <div class="barra-ab"><button type="button" id="ba-cor" class="ba-cor"></button><span id="m-ab" class="msg peq"></span><button id="b-salvar" type="button">Salvar</button></div></form>`;
   document.body.classList.add('com-barra');
@@ -540,10 +552,13 @@ function telaAbordagem(rota) {
   $('#b-copiar').onclick = async () => {
     try { await navigator.clipboard.writeText(A.fatos || historicoBO(A, calcular(A))); aviso('Histórico copiado.'); } catch { aviso('Não foi possível copiar.', 'erro'); }
   };
+  $('#fmt-doc').onchange = e => gravarPref('fdunas-fmt', e.target.value);
   f.querySelectorAll('[data-doc]').forEach(b => b.onclick = () => {
     const r = calcular(A), t = b.dataset.doc;
-    if (t === 'notificacao') return A.notificacao ? imprimir(notificacao(A, db.cfg)) : aviso('Marque "Notificar o condutor".', 'erro');
-    if (t === 'auto') return imprimir(autoConstatacao(A, db.cfg, r));
+    // Térmica: a mesma informação, em uma coluna (docs.js). O Relatório fotográfico fica sempre em A4.
+    const mm = $('#fmt-doc').value === 'Impressora térmica' ? (db.cfg.termicaMm || 58) : 0;
+    if (t === 'notificacao') return A.notificacao ? imprimir((mm ? notificacaoTermica : notificacao)(A, db.cfg), mm) : aviso('Marque "Notificar o condutor".', 'erro');
+    if (t === 'auto') return imprimir((mm ? autoTermico : autoConstatacao)(A, db.cfg, r), mm);
     if (t === 'fotos') return A.fotos.length ? ocupado(async () => imprimir(relatorioFotografico({ ...A,
       fotos: await Promise.all(A.fotos.map(async x => ({ ...x, img: await urlFoto(x.id) }))) }, db.cfg)), 'Montando o relatório')
       : aviso('Nenhuma foto nesta abordagem.', 'erro');
@@ -553,7 +568,7 @@ function telaAbordagem(rota) {
     if (!base) return aviso('Escolha a base da apreensão.', 'erro');
     if (!base.ok) return aviso(`Base sem requisito: ${base.motivo}.`, 'erro');
     if (!(+A.apreensao.valor > 0)) return aviso('Informe o valor de avaliação do veículo.', 'erro');
-    imprimir(termoApreensao(A, db.cfg));
+    imprimir((mm ? termoTermico : termoApreensao)(A, db.cfg), mm);
   });
   $('#b-apagar')?.addEventListener('click', async () => {
     if (!confirm('Apagar esta abordagem?')) return;
@@ -624,6 +639,8 @@ function telaDados() {
         <div><label for="g-id">Id funcional</label><input id="g-id" value="${esc(ag.idFunc)}"></div>
         <div><label for="g-fr">Fração</label><input id="g-fr" value="${esc(ag.fracao)}" placeholder="4º Pel/2ª Cia/1º BPAmb"></div></div>
       <label for="g-comp">Endereço de comparecimento (notificação)</label><input id="g-comp" value="${esc(db.cfg.comparecimento)}">
+      <label for="g-mm">Largura da bobina da impressora térmica</label><select id="g-mm">${opcoes(['58 mm', '80 mm'], `${db.cfg.termicaMm || 58} mm`)}</select>
+      <p class="muted peq">No Android, instale um app de impressão térmica (por exemplo, RawBT). No "Imprimir", escolha a impressora térmica.</p>
       <div class="grade"><div><label for="l-bras">Brasão do RS</label><input id="l-bras" type="file" accept="image/*"><div id="v-bras"></div></div>
         <div><label for="l-cmd">Logo do Comando de Polícia Ambiental</label><input id="l-cmd" type="file" accept="image/*"><div id="v-cmd"></div></div></div>
       <p><button id="b-ag" type="button">Salvar</button></p></details>
@@ -650,6 +667,7 @@ function telaDados() {
   $('#b-ag').onclick = async () => {
     db.cfg.agente = { nome: $('#g-nome').value.trim(), idFunc: $('#g-id').value.trim(), fracao: $('#g-fr').value.trim() };
     db.cfg.comparecimento = $('#g-comp').value.trim();
+    db.cfg.termicaMm = parseInt($('#g-mm').value, 10);
     db.cfg.logos = logos;
     await salvarCom('Dados do agente salvos.');
   };

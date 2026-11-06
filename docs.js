@@ -127,6 +127,76 @@ function autoConstatacao(ab, cfg, r) {
   </div>`;
 }
 
+// Impressora térmica (bobina de 58 ou 80 mm): os mesmos documentos em uma coluna.
+// Cada campo tem o título numa linha e o conteúdo na linha de baixo; campo vazio vira linha para preencher à mão.
+const T = {
+  cab: () => '<div class="t-cab">ESTADO DO RIO GRANDE DO SUL<br>SECRETARIA DE SEGURANÇA PÚBLICA<br>BRIGADA MILITAR<br>COMANDO DE POLÍCIA AMBIENTAL DA BRIGADA MILITAR</div>',
+  tit: s => `<div class="t-tit">${s}</div>`,
+  sec: s => `<div class="t-sec">${s}</div>`,
+  campo: (rot, val) => `<div class="t-campo"><div class="t-rot">${rot}</div>${val ? `<div class="t-val">${esc(val).replace(/\n/g, '<br>')}</div>` : '<div class="t-val vazio"></div>'}</div>`,
+  texto: s => `<div class="t-texto">${s}</div>`,
+  aviso: s => `<div class="t-aviso">${s}</div>`,
+  assin: rot => `<div class="t-assin"><div class="t-linha"></div><div class="t-rot">${rot}</div></div>`,
+  vias: s => `<div class="t-vias">${s}</div>`,
+};
+const termica = partes => `<div class="termica">${partes.filter(Boolean).join('')}</div>`;
+const agenteT = (cfg, titulo) => { const ag = cfg.agente || {};
+  return [T.sec(titulo), T.campo('Nome', ag.nome), T.campo('Id funcional', ag.idFunc), T.campo('Fração', ag.fracao), T.assin('Assinatura do policial militar')].join(''); };
+const pessoaT = p => [T.campo('Nome', nomeProprio(p.nome)), T.campo('CPF', fmtCpf(p.cpf)), T.campo('RG', p.rg), T.campo('Telefone', p.telefone),
+  T.campo('Endereço', p.endereco), T.campo('Bairro', p.bairro), T.campo('Município/UF', p.municipio), T.campo('CNH', [p.cnh, p.cnhCat].filter(Boolean).join(' cat. '))].join('');
+const recusaT = ab => ab.recusaAssinatura ? T.texto('<b>O autuado recusou-se a assinar</b> (Lei 15.434/2020, art. 113, §1º).') : '';
+const dataHoraT = ab => T.campo('Data', dataBr(ab.data)) + T.campo('Hora', ab.data.slice(11, 16));
+
+function notificacaoTermica(ab, cfg) {
+  const n = ab.notificacao || {}, p = ab.condutor || {};
+  return termica([T.cab(), T.tit('NOTIFICAÇÃO AMBIENTAL'), dataHoraT(ab),
+    T.sec('NOTIFICADO(A)'), T.campo('Nome ou razão social', nomeProprio(p.nome)), T.campo('CPF / CNPJ', fmtCpf(p.cpf)), T.campo('RG', p.rg),
+    T.campo('Telefone', p.telefone), T.campo('Endereço', p.endereco), T.campo('Bairro', p.bairro), T.campo('Município', p.municipio),
+    T.sec('MOTIVO'), T.texto(`<b>${NOTIF_ABERTURA}</b>`), T.campo('Motivo', n.motivo),
+    T.sec('LOCAL'), T.campo('Local onde foi lavrada a notificação', local(ab)), T.campo('Coordenadas geográficas', coords(ab)),
+    T.aviso('O NÃO ATENDIMENTO DO PRESENTE PODERÁ CONSTITUIR CRIME DE DESOBEDIÊNCIA CONFORME ARTIGO 330 DO CÓDIGO PENAL'),
+    T.texto('<b>RECEBI A 2ª VIA DO PRESENTE, ESTANDO NOTIFICADO SOBRE O FATO E CIENTE DOS PRAZOS ESTIPULADOS.</b>'),
+    T.campo('Data do recebimento', ''), T.assin('Assinatura do notificado ou preposto'), recusaT(ab),
+    T.campo('Endereço de comparecimento', n.comparecimento || cfg.comparecimento),
+    agenteT(cfg, 'POLICIAL MILITAR RESPONSÁVEL PELA NOTIFICAÇÃO'), T.vias('1ª via – Processo | 2ª via – Notificado')]);
+}
+
+function termoTermico(ab, cfg) {
+  const a = ab.apreensao, f = a.fiel || {}, p = ab.condutor || {}, o = ab.proprietario || {};
+  return termica([T.cab(), T.tit('TERMO DE APREENSÃO E FIEL DEPOSITÁRIO'), dataHoraT(ab),
+    T.sec('APREENSÃO'), T.campo('Documento', a.docNumero ? `${a.docTipo || 'BO/TC-COP'} nº ${a.docNumero}` : ''),
+    T.campo('Responsável pelos fatos', nomeProprio(p.nome)), T.campo('CPF', fmtCpf(p.cpf)),
+    T.campo('Bem apreendido', `${descVeiculo(ab.veiculo || {})} (1 un)`), T.campo('Valor de avaliação', `${reais(a.valor)} (Dec. RS 55.374/2020, art. 135, §1º)`),
+    a.outros ? T.campo('Outros bens', a.outros) : '', T.campo('Base da apreensão', BASES[a.base] || ''),
+    !o.mesmo && o.nome ? T.campo('Proprietário do veículo', `${nomeProprio(o.nome)}${o.cpf ? `, CPF ${fmtCpf(o.cpf)}` : ''}`) : '',
+    T.assin('Assinatura do responsável pelos bens apreendidos'), recusaT(ab),
+    T.sec('FIEL DEPOSITÁRIO'),
+    T.texto('Nomeio como <b>FIEL DEPOSITÁRIO</b> dos bens aqui apreendidos a pessoa abaixo qualificada, que desde já fica ciente de que NÃO PODERÁ vender, usufruir e/ou emprestar os mesmos, devendo apresentá-los quando solicitado pelo depositante, nas mesmas condições e quantidades que recebeu, conforme arts. 640 e 652 do Código Civil.'),
+    T.campo('Nome do(a) fiel depositário(a)', f.nome), T.campo('RG', f.rg), T.campo('CPF', fmtCpf(f.cpf)), T.campo('Telefone', f.telefone),
+    T.campo('Endereço', f.endereco), T.campo('Município/UF', f.municipioUf), T.assin('Assinatura do fiel depositário'),
+    T.campo('Destino do veículo sem fiel depositário', a.destino && a.destino !== 'Fiel depositário' ? a.destino : ''),
+    agenteT(cfg, 'AGENTE APREENSOR'), T.vias('1ª via – Processo | 2ª via – Autuado | 3ª via – Depósito')]);
+}
+
+function autoTermico(ab, cfg, r) {
+  const p = ab.condutor || {}, o = ab.proprietario || {}, d = ab.dano || {}, l = ab.lugar || {};
+  const enq = r.motivos.filter(m => m.nivel === 'vermelho' && m.enquadramento.startsWith('Infração')).map(m => m.enquadramento);
+  return termica([T.cab(), T.tit('AUTO DE CONSTATAÇÃO'),
+    T.sec('QUALIFICAÇÃO DO AUTUADO (CONDUTOR)'), pessoaT(p),
+    !o.mesmo && o.nome ? T.sec('PROPRIETÁRIO DO VEÍCULO') + pessoaT(o) : '',
+    T.sec('DATA E LOCAL'), dataHoraT(ab), T.campo('Município', ab.municipio), T.campo('Local', ab.local), T.campo('Coordenadas', coords(ab)),
+    T.sec('VEÍCULO'), T.campo('Veículo', descVeiculo(ab.veiculo || {})),
+    T.sec('DESCRIÇÃO DOS FATOS'), T.campo('Fatos', ab.fatos || historicoBO(ab, r)),
+    nFotos(ab) ? T.campo('Anexo', `Relatório fotográfico com ${plural(nFotos(ab))}.`) : '',
+    l.distPreamarM != null ? T.campo('Distância da linha de preamar máxima', `${num(l.distPreamarM)} m${l.distMetodo ? ` (medição: ${l.distMetodo.toLowerCase()})` : ''}`) : '',
+    d.areaM2 ? T.campo('Área atingida', `${num(d.areaM2)} m². Vegetação: ${d.vegetacao}${d.estagio ? `, estágio ${d.estagio.toLowerCase()}` : ''}.`) : '',
+    T.sec('AGRAVANTES E ATENUANTES (Dec. RS 55.374/2020, art. 6º)'),
+    T.campo('Agravantes', r.agravantes.join('; ') || 'Nenhuma identificada.'), T.campo('Atenuantes', ab.atenuantes || 'Nenhuma informada.'),
+    T.sec('ENQUADRAMENTO SUGERIDO (não vincula a autoridade julgadora)'), T.campo('Enquadramento', enq.join('; ') || 'A definir pela autoridade competente.'),
+    recusaT(ab), T.assin('Assinatura do autuado'),
+    agenteT(cfg, 'AGENTE RESPONSÁVEL PELA CONSTATAÇÃO'), T.vias('1ª via – SEMA/FEPAM | 2ª via – Autuado | 3ª via – Unidade')]);
+}
+
 // Relatório fotográfico: cada foto com legenda, hora e coordenadas, dizendo de onde veio a coordenada.
 const ORIGEM = { exif: 'GPS gravado na foto', aparelho: 'GPS do aparelho no momento da foto' };
 const fotoInfo = x => [x.data ? `${dataBr(x.data)} ${x.data.slice(11, 16)}` : 'data não registrada no arquivo',
@@ -187,5 +257,6 @@ function lembreteBackup(ultimo, hoje, temDados) {
   return dias > 7 ? `O último backup tem ${dias} dias. Faça um backup.` : null;
 }
 
-globalThis.Docs = { NOTIF_ABERTURA, DESTINOS, descVeiculo, motivoSugerido, notificacao, termoApreensao, autoConstatacao, historicoBO, pendenciasDe, lembreteBackup, relatorioFotografico, fotoInfo };
+globalThis.Docs = { NOTIF_ABERTURA, DESTINOS, descVeiculo, motivoSugerido, notificacao, termoApreensao, autoConstatacao, historicoBO, pendenciasDe, lembreteBackup, relatorioFotografico, fotoInfo,
+  notificacaoTermica, termoTermico, autoTermico };
 })();
