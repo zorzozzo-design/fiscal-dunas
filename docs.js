@@ -244,7 +244,11 @@ function pendenciasDe(ab, r) {
   if (f.cpf && !cpfValido(f.cpf)) add('cpf-fiel', 'Confira o CPF do fiel depositário, porque os dígitos verificadores não batem.');
   if (v.placa && !placaValida(v.placa)) add('placa', 'Confira a placa, que não segue o padrão antigo nem o Mercosul.');
   if (v.chassi && !chassiValido(v.chassi)) add('chassi', 'Confira o chassi, que precisa ter 17 caracteres sem I, O ou Q.');
-  if ((ab.lugar?.feicoes || []).includes('Duna frontal') && (!ab.dano?.vegetacao || ab.dano.vegetacao === 'Nenhuma')) add('vegetacao', 'Informe a vegetação atingida.');
+  // Vegetação fixadora marcada: pedido obrigatório (não entra em "resolvidas").
+  const semVeg = !ab.dano?.vegetacao || ab.dano.vegetacao === 'Nenhuma', semArea = !ab.dano?.areaM2;
+  const fixadora = ab.lugar?.fixadora && (semVeg || semArea);
+  if (fixadora) out.push({ chave: 'fixadora', texto: `Informe ${[semVeg && 'a vegetação atingida', semArea && 'a área do dano em m²'].filter(Boolean).join(' e ')}, porque marcou vegetação fixadora.` });
+  if (!fixadora && (ab.lugar?.feicoes || []).includes('Duna frontal') && semVeg) add('vegetacao', 'Informe a vegetação atingida.');
   if (globalThis.Normas.classificar(ab.lugar).app.some(a => a[0] === 'D04') && !ab.lugar.distMetodo) add('medicao', 'Informe como mediu a distância da preamar.');
   for (const pr of ab.providencias || []) if (PEDE_NUMERO.has(pr.tipo) && !String(pr.numero || '').trim()) add(`num:${pr.tipo}`, `Informe o número do ${pr.tipo}.`);
   if (r.motivos.some(m => m.nivel === 'vermelho') && !(ab.providencias || []).some(pr => ['BA', 'BO/TC', 'BO/COP', 'Auto de Constatação'].includes(pr.tipo)))
@@ -252,7 +256,7 @@ function pendenciasDe(ab, r) {
   if (ab.apreensao && !(+ab.apreensao.valor > 0)) add('ap-valor', 'Informe o valor de avaliação do veículo.');
   if (ab.apreensao && !ab.apreensao.fiel?.nome && !ab.apreensao.destino) add('ap-destino', 'Informe o fiel depositário ou o destino do veículo.');
   if ((ab.apreensao || ab.notificacao) && !(p.rg && p.endereco && p.municipio)) add('qualificacao', 'Complete a qualificação com RG, endereço e município.');
-  if (r.motivos.some(m => ['D05', 'D04', 'D06', 'D03'].includes(m.regra) && m.nivel === 'vermelho') && !ab.dano?.areaM2) add('area', 'Informe a área atingida em m².');
+  if (r.motivos.some(m => ['D05', 'D04', 'D06', 'D03'].includes(m.regra) && m.nivel === 'vermelho') && semArea && !fixadora) add('area', 'Informe a área atingida em m².');
   if (r.motivos.some(m => m.regra === 'D22' || m.regra === 'D03')) add('laudo', 'Peça laudo do estágio de regeneração ou da alteração do local.');
   if (r.motivos.some(m => m.nivel === 'vermelho') && !nFotos(ab)) add('fotos', 'Fotografe o fato.');
   return out;

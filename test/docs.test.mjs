@@ -127,3 +127,13 @@ test('auto térmico: qualificação, fatos e enquadramento', () => {
   assert.match(h, /art\. 56/);
   assert.ok(h.includes('Assinatura do autuado'));
 });
+
+test('vegetação fixadora marcada: pendência obrigatória de vegetação e área, que não se dispensa', () => {
+  const sem = { ...ab, dano: { vegetacao: '' } }, ks = a => pendenciasDe(a, r).filter(p => p.chave === 'fixadora');
+  assert.match(ks(sem)[0].texto, /vegetação atingida e a área do dano/);
+  assert.match(ks({ ...ab, dano: { vegetacao: 'Nenhuma', areaM2: 10 } })[0].texto, /^Informe a vegetação atingida,/);
+  assert.match(ks({ ...ab, dano: { vegetacao: 'Herbácea' } })[0].texto, /^Informe a área do dano/);
+  assert.equal(ks(ab).length, 0, 'vegetação e área informadas');
+  assert.equal(ks({ ...sem, resolvidas: ['fixadora'] }).length, 1, 'não se dispensa');
+  assert.ok(!pendenciasDe(sem, r).some(p => p.chave === 'area'), 'sem pedido repetido da área');
+});

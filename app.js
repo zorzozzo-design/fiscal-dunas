@@ -399,6 +399,7 @@ function telaAbordagem(rota) {
       ${chk('lugar.placaProibicao', 'Há placa de proibição de veículos no local')}
       <label>Ambiente</label><div class="chips">${FEICOES.map(f => `<label class="chk chip-chk"><input type="checkbox" data-arr="lugar.feicoes" value="${esc(f)}"> ${esc(f)}</label>`).join('')}</div>
       ${chk('lugar.fixadora', 'A vegetação atingida <b>fixa duna</b>')}
+      <p id="fix-aviso" class="msg erro peq" hidden></p>
       <div class="grade">${nume('lugar.distPreamarM', 'Distância da preamar máxima (m)')}${sel('lugar.distMetodo', 'Como foi medida', METODOS_PREAMAR)}${nume('lugar.lagoa.distM', 'Distância da lagoa (m)')}
         ${sel('lugar.lagoa.zona', 'Zona da lagoa', ['rural', 'urbana'])}</div>
       ${chk('lugar.lagoa.ate20ha', 'Lagoa com até 20 ha (faixa de 50 m em zona rural)')}
@@ -499,6 +500,8 @@ function telaAbordagem(rota) {
       ${r.pend.length ? `<p class="peq"><b>Pendências:</b> ${esc(r.pend.map(p => p.texto).join(' '))}</p>` : ''}</div>`;
     $('#hist').innerHTML = r.hist.length ? `<p class="msg erro peq">Já abordado ${r.hist.length} vez(es): ${r.hist.map(h => `<a href="#/ab/${h.id}">${fmtData(h.data)}</a>`).join(', ')}</p>` : '';
     $('#bases').innerHTML = r.bases.map(b => `<div>${b.ok ? '✓' : '✗'} <b>${esc(BASES[b.base])}:</b> ${esc(b.motivo)}</div>`).join('');
+    const fx = r.pend.find(p => p.chave === 'fixadora');
+    $('#fix-aviso').hidden = !fx; $('#fix-aviso').textContent = fx ? `Obrigatório: ${fx.texto.replace('Informe', 'informe no bloco 4')}` : '';
     $('#ba-cor').className = `ba-cor sem-${r.cor}`;
     $('#ba-cor').textContent = `${COR_TXT[r.cor]}${r.rito.rito ? ' · ' + r.rito.rito : ''}`;
     return r;
