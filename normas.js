@@ -139,6 +139,15 @@ function checar(ab, ctx = {}) {
     add('D22', 'vermelho', `Restinga ${d.vegetacao.toLowerCase()} em estágio ${d.estagio.toLowerCase()} de regeneração (Mata Atlântica) danificada.`,
       'Lei 11.428/2006', `Infração: ${DEC}, art. 58 (300 UPF/ha + 50 UPF/ha por ser Mata Atlântica)${dobro}`, 'L9605-38A', 'Peça laudo do estágio de regeneração.');
 
+  // D30: ambiente protegido marcado sem dano constatado. Nunca fica "Sem irregularidade": o agente confere o local.
+  const ambientes = [...new Set([...(ab.lugar?.feicoes || []).filter(f => f !== 'Faixa de praia').map(f => f.toLowerCase()),
+    ...(ab.lugar?.fixadora ? ['vegetação fixadora de dunas'] : []), ...c.app.filter(a => a[0] === 'D06').map(a => a[1].toLowerCase())])];
+  if (ambientes.length && !out.some(m => !m.interno && ['D03', 'D04', 'D05', 'D06', 'D21', 'D22'].includes(m.regra)))
+    add('D30', 'amarelo', `Veículo em ambiente protegido (${ambientes.join('; ')}), sem dano constatado até o momento.`,
+      [...new Set([c.zonaCosteira && 'Lei 15.434/2020, art. 208', (ab.lugar?.feicoes || []).includes('Restinga') && 'Lei 11.428/2006', ...c.app.map(a => a[2])].filter(Boolean))].join('; '), '', '',
+      'Verifique dano à vegetação, sulcos, rastros e fauna. Com dano, marque no bloco Dano. Sem dano, oriente e registre a orientação.'
+      + (ab.lugar?.fixadora && !comDano ? ' A vegetação fixadora está marcada, mas a vegetação atingida está como Nenhuma. Confira.' : ''));
+
   // D07: Unidade de Conservação.
   if (emUc) {
     add('D07', comDano ? 'vermelho' : 'amarelo', `Tráfego de veículo dentro de Unidade de Conservação ${c.uc}${ab.lugar.ucNome ? ` (${ab.lugar.ucNome})` : ''}${comDano ? ', com dano' : ''}.`,

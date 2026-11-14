@@ -23,7 +23,7 @@ Os textos de tela, do painel e do Guia seguem o ASD-STE100, adaptado ao portugu�
 
    Ao salvar pela primeira vez, a abordagem recebe um número que nunca muda: FD-<Id funcional>-<ano>-<sequência>. Cada documento sai com esse número e o tipo: /N (Notificação), /T (Termo), /A (Auto) e /F (Relatório fotográfico). O app confere CPF, placa e chassi. Um dado fora do padrão vira pendência, que pode ser dispensada.
 
-   O painel recalcula a cada campo: regras D01 a D29, crime e infração sugeridos, rito, agravantes e pendências. **O painel indica, mas não autua.** O Termo de Apreensão só sai com base válida e valor de avaliação (D10 e D14).
+   O painel recalcula a cada campo: regras D01 a D30, crime e infração sugeridos, rito, agravantes e pendências. **O painel indica, mas não autua.** O Termo de Apreensão só sai com base válida e valor de avaliação (D10 e D14).
 4. **Documentos:** Notificação Ambiental, Termo de Apreensão e Fiel Depositário, Auto de Constatação (Dec. RS 55.374/2020, art. 119), Relatório Fotográfico e cópia do histórico para o BO/TC. Com fotos, o Auto e o histórico citam o relatório. Para salvar em PDF, toque em "Imprimir". Em **Formato dos documentos**, escolha **Impressora térmica** para imprimir Notificação, Termo e Auto em uma coluna (bobina de 58 ou 80 mm, definida em Dados): cada campo tem o título numa linha e o conteúdo na linha de baixo. No Android, instale um app de impressão térmica (por exemplo, RawBT). O Relatório fotográfico sai sempre em A4.
 5. **Denúncias:** aba ao lado de Abordagens. Registre data, situação, tipo, origem, local e relato. Cole a mensagem do WhatsApp no relato. Anexe fotos e vídeos (vídeo até 50 MB). Para ir ao local, toque em **Nova abordagem desta denúncia**: a abordagem já vem com município, local e placa. A denúncia mostra as abordagens ligadas a ela e as abordagens com a mesma placa. Use a busca para achar uma denúncia por local, placa, pessoa ou relato. O backup leva as denúncias e, se marcado, os anexos.
 6. **Relatório:** aba ao lado de Denúncias. Escolha o período e veja abordagens, crimes, notificações, apreensões, denúncias e abordagens por município. Toque em **Baixar planilha (CSV)** para abrir no Excel. A planilha sai sem criptografia: guarde o arquivo em local seguro.
@@ -50,6 +50,7 @@ Base legal e regras no documento do projeto ("Fiscal Dunas: base legal e regras 
 | D21 a D27 | Trilha reiterada (art. 48), Mata Atlântica (art. 38-A), extração de areia, fuga, evento, habilitação, condutas na via |
 | D28 | Faixa de areia, pela Orientação 002/2ª Cia/1º BPAmb/2025: transitar com placa, CTB art. 187, I; sem placa, art. 193; estacionar com placa, art. 181, XVII; trechos liberados em Cidreira |
 | D29 | Trilha antiga ou área consolidada: não há fato consumado (STJ, Súmula 613); tese do art. 61-A do Código Florestal na defesa |
+| D30 | Ambiente protegido marcado (duna, banhado, restinga, capão, vegetação fixadora, faixa de lagoa) sem dano constatado: amarelo, para o agente conferir o local. Nunca fica "Sem irregularidade" |
 
 ## Desenvolvimento
 

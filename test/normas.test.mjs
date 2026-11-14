@@ -274,3 +274,26 @@ test('D29: trilha antiga ou área consolidada não legaliza o tráfego', () => {
   assert.match(ms.map(m => m.texto).join(' '), /art\. 61-A/);
   assert.ok(!tem(ab(), 'D29'));
 });
+
+// D30: ambiente protegido marcado nunca fica "Sem irregularidade".
+test('D30: campo de dunas, banhado e fixadora sem dano marcado dão amarelo', () => {
+  const caso = ab({ lugar: { feicoes: ['Campo de dunas móveis', 'Banhado'], fixadora: true } });
+  const ms = checar(caso);
+  const d30 = ms.filter(m => m.regra === 'D30');
+  assert.equal(d30.length, 1);
+  assert.equal(d30[0].nivel, 'amarelo');
+  assert.ok(!d30[0].interno, 'é fato: vai para o histórico');
+  assert.match(d30[0].texto, /campo de dunas móveis/);
+  assert.match(d30[0].dica, /vegetação atingida/, 'fixadora marcada sem vegetação: avisa a contradição');
+  for (const f of ['Campo de dunas móveis', 'Banhado', 'Restinga', 'Capão de mata em margem de lagoa'])
+    assert.ok(tem(ab({ lugar: { feicoes: [f] } }), 'D30'), f);
+  assert.ok(tem(ab({ lugar: { fixadora: true } }), 'D30'));
+  assert.ok(tem(ab({ lugar: { lagoa: { distM: 40, zona: 'rural' } } }), 'D30'), 'faixa de lagoa');
+});
+test('D30: some quando outra regra ambiental já acende, e não acende fora de ambiente protegido', () => {
+  assert.ok(!tem(ab({ lugar: { feicoes: ['Campo de dunas móveis'], fixadora: true }, dano: { vegetacao: 'Herbácea' } }), 'D30'));
+  assert.ok(!tem(ab({ lugar: { feicoes: ['Duna frontal'] } }), 'D30'), 'duna frontal já dá D05');
+  assert.ok(!tem(ab({ lugar: { feicoes: ['Banhado'] }, dano: { sulcos: true } }), 'D30'), 'sulcos já dão D03');
+  assert.ok(!tem(ab(), 'D30'));
+  assert.ok(!tem(ab({ lugar: { feicoes: ['Faixa de praia'] } }), 'D30'), 'praia tem a D28');
+});
