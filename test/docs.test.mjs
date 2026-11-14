@@ -48,7 +48,7 @@ test('histórico do BO cita o crime e a apreensão', () => {
 
 test('pendências', () => {
   const ks = pendenciasDe(ab, r).map(p => p.chave);
-  assert.deepEqual(ks, ['num:BO/TC', 'ap-valor', 'ap-destino', 'qualificacao', 'fotos']);
+  assert.deepEqual(ks, ['fixadora', 'num:BO/TC', 'ap-valor', 'ap-destino', 'qualificacao', 'fotos']);
   assert.ok(pendenciasDe({ ...ab, resolvidas: ['qualificacao'] }, r).every(p => p.chave !== 'qualificacao'));
   assert.ok(pendenciasDe({ ...ab, fotos: [foto] }, r).every(p => p.chave !== 'fotos'));
 });
@@ -130,10 +130,17 @@ test('auto térmico: qualificação, fatos e enquadramento', () => {
 
 test('vegetação fixadora marcada: pendência obrigatória de vegetação e área, que não se dispensa', () => {
   const sem = { ...ab, dano: { vegetacao: '' } }, ks = a => pendenciasDe(a, r).filter(p => p.chave === 'fixadora');
-  assert.match(ks(sem)[0].texto, /vegetação atingida e a área do dano/);
-  assert.match(ks({ ...ab, dano: { vegetacao: 'Nenhuma', areaM2: 10 } })[0].texto, /^Informe a vegetação atingida,/);
-  assert.match(ks({ ...ab, dano: { vegetacao: 'Herbácea' } })[0].texto, /^Informe a área do dano/);
-  assert.equal(ks(ab).length, 0, 'vegetação e área informadas');
+  assert.equal(ks(sem)[0].texto, 'Informe a vegetação atingida, a área do dano em m² e a descrição do dano, porque marcou vegetação fixadora.');
+  assert.equal(ks({ ...ab, dano: { vegetacao: 'Nenhuma', areaM2: 10, descricao: 'x' } })[0].texto, 'Informe a vegetação atingida, porque marcou vegetação fixadora.');
+  assert.equal(ks({ ...ab, dano: { vegetacao: 'Herbácea', descricao: 'x' } })[0].texto, 'Informe a área do dano em m², porque marcou vegetação fixadora.');
+  assert.equal(ks({ ...ab, dano: { ...ab.dano, descricao: 'x' } }).length, 0, 'vegetação, área e descrição informadas');
+  assert.match(ks(ab)[0].texto, /^Informe a descrição do dano,/);
   assert.equal(ks({ ...sem, resolvidas: ['fixadora'] }).length, 1, 'não se dispensa');
   assert.ok(!pendenciasDe(sem, r).some(p => p.chave === 'area'), 'sem pedido repetido da área');
+});
+
+test('descrição do dano entra no histórico (e assim no Auto)', () => {
+  const t = historicoBO({ ...ab, dano: { ...ab.dano, descricao: 'Rastros de pneu sobre gramíneas, plantas esmagadas' } }, r);
+  assert.match(t, /Dano constatado: Rastros de pneu sobre gramíneas, plantas esmagadas\./);
+  assert.ok(!/Dano constatado/.test(historicoBO(ab, r)));
 });

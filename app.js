@@ -339,7 +339,7 @@ function novaAbordagem() {
     lugar: { via: false, feicoes: [], fixadora: false, distPreamarM: null, lagoa: { distM: null, zona: 'rural', ate20ha: false }, uc: '', ucNome: '', amortecimento: false, marinha: false, privada: false },
     veiculo: { tipo: TIPOS_VEICULO[0], placa: '', chassi: '', marca: '', modelo: '', cor: '', ano: '', registro: 'Não verificado', semPlaca: false, alterado: false, posseIlicita: false },
     condutor: { cnhSit: 'Não verificada', cnhCat: '' }, proprietario: { mesmo: true, entregouDirecao: false },
-    dano: { vegetacao: '', estagio: '', areaM2: null }, condutas: {}, reincidencia: '',
+    dano: { vegetacao: '', estagio: '', areaM2: null, descricao: '' }, condutas: {}, reincidencia: '',
     providencias: [], apreensao: null, notificacao: null, fatos: '', atenuantes: '', obs: '', recusaAssinatura: false, resolvidas: [], fotos: [] };
 }
 
@@ -425,6 +425,7 @@ function telaAbordagem(rota) {
 
     <details class="card card-dobra" open><summary><h2>4. Dano e fotos</h2></summary><div class="grade">${sel('dano.vegetacao', 'Vegetação atingida', VEGETACAO)}${sel('dano.estagio', 'Estágio de regeneração', ESTAGIOS)}
       ${nume('dano.areaM2', 'Área atingida (m²)')}</div>
+      <label>Descrição do dano</label><textarea data-k="dano.descricao" rows="3" placeholder="Ex.: rastros de pneu sobre gramíneas fixadoras, plantas esmagadas e raízes expostas"></textarea>
       ${chk('dano.sulcos', 'Sulcos, rampas ou cortes na duna')}${chk('dano.reiterada', 'Trilha usada de forma reiterada (solo nu)')}
       ${chk('dano.tocaNinho', 'Toca, ninho ou abrigo destruído')}<div data-se="dano.tocaNinho" class="grade">${txt('dano.especie', 'Espécie')}<div>${chk('dano.ameacada', 'Espécie ameaçada')}</div></div>
       ${chk('dano.areia', 'Extração de areia')}<div data-se="dano.areia" class="grade">${nume('dano.areiaM3', 'Volume (m³)')}</div>

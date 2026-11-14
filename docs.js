@@ -225,6 +225,7 @@ function historicoBO(ab, r) {
     + `a guarnição abordou o veículo ${descVeiculo(v) || 'a descrever'}, conduzido por ${nomeProprio(p.nome) || 'pessoa a identificar'}${p.cpf ? `, CPF ${fmtCpf(p.cpf)}` : ''}, `
     + `trafegando ${ondeTxt ? `em área de ${ondeTxt}` : 'em área a caracterizar'}. `
     + (r.motivos.filter(m => m.nivel === 'vermelho' && !m.interno).map(m => m.texto).join(' ') || 'Não foi constatada irregularidade.')
+    + (String(ab.dano?.descricao || '').trim() ? ` Dano constatado: ${ab.dano.descricao.trim().replace(/[.\s]+$/, '')}.` : '')
     + (crimes ? ` Os fatos, em tese, configuram: ${crimes}.` : '')
     + (ab.apreensao ? ` O veículo foi apreendido, avaliado em ${reais(ab.apreensao.valor)}.` : '')
     + (nFotos(ab) ? ` Foram feitas ${plural(nFotos(ab))} (relatório fotográfico anexo).` : '')
@@ -245,9 +246,10 @@ function pendenciasDe(ab, r) {
   if (v.placa && !placaValida(v.placa)) add('placa', 'Confira a placa, que não segue o padrão antigo nem o Mercosul.');
   if (v.chassi && !chassiValido(v.chassi)) add('chassi', 'Confira o chassi, que precisa ter 17 caracteres sem I, O ou Q.');
   // Vegetação fixadora marcada: pedido obrigatório (não entra em "resolvidas").
-  const semVeg = !ab.dano?.vegetacao || ab.dano.vegetacao === 'Nenhuma', semArea = !ab.dano?.areaM2;
-  const fixadora = ab.lugar?.fixadora && (semVeg || semArea);
-  if (fixadora) out.push({ chave: 'fixadora', texto: `Informe ${[semVeg && 'a vegetação atingida', semArea && 'a área do dano em m²'].filter(Boolean).join(' e ')}, porque marcou vegetação fixadora.` });
+  const semVeg = !ab.dano?.vegetacao || ab.dano.vegetacao === 'Nenhuma', semArea = !ab.dano?.areaM2, semDesc = !String(ab.dano?.descricao || '').trim();
+  const falta = [semVeg && 'a vegetação atingida', semArea && 'a área do dano em m²', semDesc && 'a descrição do dano'].filter(Boolean);
+  const fixadora = ab.lugar?.fixadora && falta.length > 0;
+  if (fixadora) out.push({ chave: 'fixadora', texto: `Informe ${falta.length > 1 ? `${falta.slice(0, -1).join(', ')} e ${falta.at(-1)}` : falta[0]}, porque marcou vegetação fixadora.` });
   if (!fixadora && (ab.lugar?.feicoes || []).includes('Duna frontal') && semVeg) add('vegetacao', 'Informe a vegetação atingida.');
   if (globalThis.Normas.classificar(ab.lugar).app.some(a => a[0] === 'D04') && !ab.lugar.distMetodo) add('medicao', 'Informe como mediu a distância da preamar.');
   for (const pr of ab.providencias || []) if (PEDE_NUMERO.has(pr.tipo) && !String(pr.numero || '').trim()) add(`num:${pr.tipo}`, `Informe o número do ${pr.tipo}.`);
