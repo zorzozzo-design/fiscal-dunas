@@ -43,12 +43,13 @@ test('histórico do BO cita o crime e a apreensão', () => {
   const t = historicoBO(ab, r);
   assert.match(t, /art\. 50/);
   assert.match(t, /apreendido/);
+  assert.ok(!/avaliad|R\$/.test(historicoBO({ ...ab, apreensao: { base: 'penal', valor: 85000 } }, r)), 'histórico sem valor do bem');
   assert.match(t, /^Em 08\/11\/2026, por volta das 16:20/);
 });
 
 test('pendências', () => {
   const ks = pendenciasDe(ab, r).map(p => p.chave);
-  assert.deepEqual(ks, ['fixadora', 'num:BO/TC', 'ap-valor', 'ap-destino', 'qualificacao', 'fotos']);
+  assert.deepEqual(ks, ['fixadora', 'num:BO/TC', 'ap-destino', 'qualificacao', 'fotos'], 'valor do bem não é pendência');
   assert.ok(pendenciasDe({ ...ab, resolvidas: ['qualificacao'] }, r).every(p => p.chave !== 'qualificacao'));
   assert.ok(pendenciasDe({ ...ab, fotos: [foto] }, r).every(p => p.chave !== 'fotos'));
 });
@@ -143,4 +144,9 @@ test('descrição do dano entra no histórico (e assim no Auto)', () => {
   const t = historicoBO({ ...ab, dano: { ...ab.dano, descricao: 'Rastros de pneu sobre gramíneas, plantas esmagadas' } }, r);
   assert.match(t, /Dano constatado: Rastros de pneu sobre gramíneas, plantas esmagadas\./);
   assert.ok(!/Dano constatado/.test(historicoBO(ab, r)));
+});
+
+test('termo sem valor informado não mostra a linha do valor', () => {
+  assert.ok(!termoApreensao(ab, cfg).includes('Valor de avaliação'));
+  assert.ok(!termoTermico(ab, cfg).includes('Valor de avaliação'));
 });

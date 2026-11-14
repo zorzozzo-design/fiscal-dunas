@@ -132,10 +132,9 @@ test('D12 e D15: agravantes', () => {
   assert.ok(!agravantes({ ...ab(), data: '2026-11-04T06:00' }).includes('Período noturno (18h às 6h)'));
 });
 
-test('D13 e D14: fiel depositário com histórico e termo sem valor', () => {
+test('D13: fiel depositário com histórico; valor do bem não é exigido', () => {
   assert.ok(tem(ab({ apreensao: { valor: 5000, fiel: { autuado: true } } }), 'D13', { historico: 1 }));
-  assert.equal(de(ab({ apreensao: { valor: null } }), 'D14')[0].nivel, 'amarelo');
-  assert.ok(!tem(ab({ apreensao: { valor: 5000 } }), 'D14'));
+  assert.ok(!tem(ab({ apreensao: { valor: null } }), 'D14'));
 });
 
 test('D16: embriaguez é crime em qualquer local; infração só em via', () => {

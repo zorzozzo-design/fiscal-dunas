@@ -81,7 +81,7 @@ function termoApreensao(ab, cfg) {
       fica apreendido o bem abaixo descrito, com base em ${esc(BASES[a.base] || '')}:</p>
     <table class="doc-linhas">
       <tr class="linha-item"><td>${esc(descVeiculo(v))}</td><td class="doc-qtd">1 un</td></tr>
-      <tr class="linha-item"><td>Valor de avaliação: <b>${esc(reais(a.valor))}</b> (Dec. RS 55.374/2020, art. 135, §1º)</td><td></td></tr>
+      ${+a.valor > 0 ? `<tr class="linha-item"><td>Valor de avaliação: <b>${esc(reais(a.valor))}</b></td><td></td></tr>` : ''}
       ${(a.outros || '').split('\n').filter(Boolean).map(x => `<tr class="linha-item"><td>${esc(x)}</td><td></td></tr>`).join('')}
       ${Array.from({ length: 6 }, () => '<tr class="linha-item"><td>&nbsp;</td><td></td></tr>').join('')}</table>
     ${ab.proprietario && !ab.proprietario.mesmo && ab.proprietario.nome ? `<p class="doc-texto">Proprietário do veículo: ${esc(nomeProprio(ab.proprietario.nome))}${ab.proprietario.cpf ? `, CPF ${esc(fmtCpf(ab.proprietario.cpf))}` : ''}.</p>` : ''}
@@ -168,7 +168,7 @@ function termoTermico(ab, cfg) {
   return termica([T.cab(), T.tit('TERMO DE APREENSÃO E FIEL DEPOSITÁRIO'), numT(ab, 'T'), dataHoraT(ab),
     T.sec('APREENSÃO'), T.campo('Documento', a.docNumero ? `${a.docTipo || 'BO/TC-COP'} nº ${a.docNumero}` : ''),
     T.campo('Responsável pelos fatos', nomeProprio(p.nome)), T.campo('CPF', fmtCpf(p.cpf)),
-    T.campo('Bem apreendido', `${descVeiculo(ab.veiculo || {})} (1 un)`), T.campo('Valor de avaliação', `${reais(a.valor)} (Dec. RS 55.374/2020, art. 135, §1º)`),
+    T.campo('Bem apreendido', `${descVeiculo(ab.veiculo || {})} (1 un)`), +a.valor > 0 ? T.campo('Valor de avaliação', reais(a.valor)) : '',
     a.outros ? T.campo('Outros bens', a.outros) : '', T.campo('Base da apreensão', BASES[a.base] || ''),
     !o.mesmo && o.nome ? T.campo('Proprietário do veículo', `${nomeProprio(o.nome)}${o.cpf ? `, CPF ${fmtCpf(o.cpf)}` : ''}`) : '',
     T.assin('Assinatura do responsável pelos bens apreendidos'), recusaT(ab),
@@ -227,7 +227,7 @@ function historicoBO(ab, r) {
     + (r.motivos.filter(m => m.nivel === 'vermelho' && !m.interno).map(m => m.texto).join(' ') || 'Não foi constatada irregularidade.')
     + (String(ab.dano?.descricao || '').trim() ? ` Dano constatado: ${ab.dano.descricao.trim().replace(/[.\s]+$/, '')}.` : '')
     + (crimes ? ` Os fatos, em tese, configuram: ${crimes}.` : '')
-    + (ab.apreensao ? ` O veículo foi apreendido, avaliado em ${reais(ab.apreensao.valor)}.` : '')
+    + (ab.apreensao ? ' O veículo foi apreendido.' : '')
     + (nFotos(ab) ? ` Foram feitas ${plural(nFotos(ab))} (relatório fotográfico anexo).` : '')
     + (ab.obs ? ` ${ab.obs}` : '');
 }
@@ -255,7 +255,6 @@ function pendenciasDe(ab, r) {
   for (const pr of ab.providencias || []) if (PEDE_NUMERO.has(pr.tipo) && !String(pr.numero || '').trim()) add(`num:${pr.tipo}`, `Informe o número do ${pr.tipo}.`);
   if (r.motivos.some(m => m.nivel === 'vermelho') && !(ab.providencias || []).some(pr => ['BA', 'BO/TC', 'BO/COP', 'Auto de Constatação'].includes(pr.tipo)))
     add('sem-documento', 'Faça o BA, o BO ou o Auto de Constatação.');
-  if (ab.apreensao && !(+ab.apreensao.valor > 0)) add('ap-valor', 'Informe o valor de avaliação do veículo.');
   if (ab.apreensao && !ab.apreensao.fiel?.nome && !ab.apreensao.destino) add('ap-destino', 'Informe o fiel depositário ou o destino do veículo.');
   if ((ab.apreensao || ab.notificacao) && !(p.rg && p.endereco && p.municipio)) add('qualificacao', 'Complete a qualificação com RG, endereço e município.');
   if (r.motivos.some(m => ['D05', 'D04', 'D06', 'D03'].includes(m.regra) && m.nivel === 'vermelho') && semArea && !fixadora) add('area', 'Informe a área atingida em m².');

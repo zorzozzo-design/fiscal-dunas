@@ -18,12 +18,12 @@ Os textos de tela, do painel e do Guia seguem o ASD-STE100, adaptado ao portugu�
    3. **Condutor e proprietário:** qualificação, CNH e quem entregou a direção.
    4. **Dano e fotos:** vegetação, estágio, área em m², sulcos, trilha reiterada, toca ou ninho e extração de areia. Tire fotos com a câmera ou escolha da galeria. Escreva uma legenda para cada foto. A hora e as coordenadas vêm do arquivo da foto. Se o arquivo não tem GPS, a foto tirada pelo app recebe o GPS do aparelho. A foto da galeria sem GPS fica sem coordenadas. O app reduz cada foto a 1280 px e guarda a foto à parte, criptografada. A abordagem guarda só a referência da foto.
    5. **Condutas:** embriaguez, manobras, racha, fuga, evento organizado e reincidência.
-   6. **Medidas:** providências com número, apreensão e notificação. Na apreensão, escolha a base, informe o valor de avaliação e o fiel depositário.
+   6. **Medidas:** providências com número, apreensão e notificação. Na apreensão, escolha a base e informe o fiel depositário. O valor de avaliação é opcional.
    7. **Fatos e documentos:** o app gera o texto do histórico pelo enquadramento. Edite o texto se necessário.
 
    Ao salvar pela primeira vez, a abordagem recebe um número que nunca muda: FD-<Id funcional>-<ano>-<sequência>. Cada documento sai com esse número e o tipo: /N (Notificação), /T (Termo), /A (Auto) e /F (Relatório fotográfico). O app confere CPF, placa e chassi. Um dado fora do padrão vira pendência, que pode ser dispensada.
 
-   O painel recalcula a cada campo: regras D01 a D30, crime e infração sugeridos, rito, agravantes e pendências. **O painel indica, mas não autua.** O Termo de Apreensão só sai com base válida e valor de avaliação (D10 e D14).
+   O painel recalcula a cada campo: regras D01 a D30, crime e infração sugeridos, rito, agravantes e pendências. **O painel indica, mas não autua.** O Termo de Apreensão só sai com base válida (D10).
 4. **Documentos:** Notificação Ambiental, Termo de Apreensão e Fiel Depositário, Auto de Constatação (Dec. RS 55.374/2020, art. 119), Relatório Fotográfico e cópia do histórico para o BO/TC. Com fotos, o Auto e o histórico citam o relatório. Para salvar em PDF, toque em "Imprimir". Em **Formato dos documentos**, escolha **Impressora térmica** para imprimir Notificação, Termo e Auto em uma coluna (bobina de 58 ou 80 mm, definida em Dados): cada campo tem o título numa linha e o conteúdo na linha de baixo. No Android, instale um app de impressão térmica (por exemplo, RawBT). O Relatório fotográfico sai sempre em A4.
 5. **Denúncias:** aba ao lado de Abordagens. Registre data, situação, tipo, origem, local e relato. Cole a mensagem do WhatsApp no relato. Anexe fotos e vídeos (vídeo até 50 MB). Para ir ao local, toque em **Nova abordagem desta denúncia**: a abordagem já vem com município, local e placa. A denúncia mostra as abordagens ligadas a ela e as abordagens com a mesma placa. Use a busca para achar uma denúncia por local, placa, pessoa ou relato. O backup leva as denúncias e, se marcado, os anexos.
 6. **Relatório:** aba ao lado de Denúncias. Escolha o período e veja abordagens, crimes, notificações, apreensões, denúncias e abordagens por município. Toque em **Baixar planilha (CSV)** para abrir no Excel. A planilha sai sem criptografia: guarde o arquivo em local seguro.
@@ -44,7 +44,7 @@ Base legal e regras no documento do projeto ("Fiscal Dunas: base legal e regras 
 | D07, D08 | Unidade de Conservação (multa em dobro; UC federal: Dec. 6.514, arts. 90 e 91, pelo ICMBio; PARNA da Lagoa do Peixe: trilhas, praia ao norte da barra e orientação do ICMBio); zona de amortecimento só com ato que a cria; bem da União |
 | D09 | Rito: até 2 anos somados, TC; acima, DP |
 | D10 | Bases da apreensão: penal, administrativa (art. 24) ou trânsito |
-| D11 a D15 | Histórico, reincidência, fiel depositário, valor de avaliação, agravantes |
+| D11 a D15 | Histórico, reincidência, fiel depositário, agravantes |
 | D16 a D19 | Embriaguez, menor e art. 310, veículo sem placa, toca ou ninho |
 | D20 | Sem irregularidade: orientação |
 | D21 a D27 | Trilha reiterada (art. 48), Mata Atlântica (art. 38-A), extração de areia, fuga, evento, habilitação, condutas na via |

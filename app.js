@@ -446,7 +446,7 @@ function telaAbordagem(rota) {
     <details class="card card-dobra" open><summary><h2>6. Medidas</h2></summary><div id="provs" class="provs"></div>
       <h2 class="sec-tit">Apreensão do veículo</h2><label class="chk"><input type="checkbox" id="ap-on"> Apreender</label>
       <div data-se="apreensao"><div id="bases" class="peq"></div>
-        <div class="grade">${sel('apreensao.base', 'Base da apreensão', Object.keys(BASES), BASES)}${nume('apreensao.valor', 'Valor de avaliação (R$)')}
+        <div class="grade">${sel('apreensao.base', 'Base da apreensão', Object.keys(BASES), BASES)}${nume('apreensao.valor', 'Valor de avaliação (R$, opcional)')}
           ${sel('apreensao.docTipo', 'Documento', ['BO/TC-COP', 'BA'])}${txt('apreensao.docNumero', 'Nº do documento')}${sel('apreensao.destino', 'Destino', ['', ...DESTINOS])}</div>
         <label>Outros itens apreendidos (um por linha)</label><textarea data-k="apreensao.outros" rows="2"></textarea>
         <h2 class="sec-tit">Fiel depositário</h2><div class="grade">${txt('apreensao.fiel.nome', 'Nome')}${txt('apreensao.fiel.cpf', 'CPF', ' data-t="cpf" inputmode="numeric"')}
@@ -605,12 +605,11 @@ function telaAbordagem(rota) {
     if (t === 'fotos') return A.fotos.length ? ocupado(async () => imprimir(relatorioFotografico({ ...A,
       fotos: await Promise.all(A.fotos.map(async x => ({ ...x, img: await urlFoto(x.id) }))) }, db.cfg)), 'Montando o relatório')
       : aviso('Nenhuma foto nesta abordagem.', 'erro');
-    // D10 e D14: o termo exige base válida e valor de avaliação.
+    // D10: o termo exige base válida.
     if (!A.apreensao) return aviso('Marque "Apreender".', 'erro');
     const base = r.bases.find(x => x.base === A.apreensao.base);
     if (!base) return aviso('Escolha a base da apreensão.', 'erro');
     if (!base.ok) return aviso(`Base sem requisito: ${base.motivo}.`, 'erro');
-    if (!(+A.apreensao.valor > 0)) return aviso('Informe o valor de avaliação do veículo.', 'erro');
     imprimir((mm ? termoTermico : termoApreensao)(A, db.cfg), mm);
   });
   $('#b-apagar')?.addEventListener('click', async () => {

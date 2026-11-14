@@ -232,8 +232,6 @@ function checar(ab, ctx = {}) {
   if (ctx.historico) aviso('D11', 'amarelo', `${ctx.historico} abordage${ctx.historico > 1 ? 'ns anteriores' : 'm anterior'} do mesmo veículo ou pessoa. Isso indica uso reiterado.`, `${DEC}, art. 24, III`);
   if (ab.apreensao?.fiel?.autuado && ctx.historico)
     aviso('D13', 'amarelo', 'O fiel depositário é um autuado com histórico. Há risco de nova infração. Nomeie outro depositário.', `${DEC}, art. 141; STJ, Tema 1043`);
-  if (ab.apreensao && !(+ab.apreensao.valor > 0))
-    aviso('D14', 'amarelo', 'O Termo de Apreensão está sem o valor de avaliação. Informe o valor.', `${DEC}, art. 135, §1º`);
 
   // D28: praia balneária. Lei RS 9.204/1991, art. 1º: veículo proibido; o município demarca e sinaliza. A lei não tem sanção própria.
   if ((ab.lugar?.feicoes || []).includes('Faixa de praia')) {
@@ -291,7 +289,7 @@ const GUIA = [
   ['Caso típico', 'O veículo esmaga a vegetação fixadora. O crime é o art. 50 da Lei 9.605, com rito de TC. No Auto de Constatação, use o Dec. 55.374, art. 56. Para a prova, registre fotos, área em m², GPS e a descrição da vegetação.'],
   ['Rito', 'Some as penas máximas dos crimes. Até 2 anos, o rito é TC. Acima de 2 anos, conduza à DP. Exemplos acima de 2 anos: arts. 38-A, 40, 63 e 69 da Lei 9.605 e art. 306 do CTB.'],
   ['Recolher o veículo', 'Há três bases para recolher o veículo. Penal: o veículo é instrumento do crime em flagrante. Administrativa: exige posse ilícita, alteração ou uso reiterado. Trânsito: só em via e com convênio.'],
-  ['Fiel depositário', 'O autuado não tem direito de ser fiel depositário (STJ, Tema 1043). Não nomeie um reincidente como depositário. O termo exige o valor de avaliação.'],
+  ['Fiel depositário', 'O autuado não tem direito de ser fiel depositário (STJ, Tema 1043). Não nomeie um reincidente como depositário.'],
   ['Competência', 'UC federal ou terreno de marinha: o caso é da Justiça Federal. UC estadual ou municipal: em regra, o caso é da Justiça Estadual.'],
   ['Sem irregularidade', 'Registre a orientação (Lei 15.434, art. 13). Na próxima abordagem, a orientação registrada prova o uso reiterado.'],
 ];
