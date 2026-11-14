@@ -1,5 +1,5 @@
-// Camadas importadas pelo agente (KML ou GeoJSON): áreas dizem se o ponto está dentro; linhas dão a distância em metros.
-// Coordenadas guardadas como [lat, lon], igual ao resto do app.
+// Camadas importadas pelo agente (KML, KMZ ou GeoJSON): áreas dizem se o ponto está dentro; linhas dão a distância em metros.
+// Coordenadas guardadas como [lat, lon], igual ao resto do app. c.uc ('federal', 'estadual', 'municipal'): camada de UC.
 (() => {
 
 const LIMITE_M = 2000; // linhas mais longe que isso não aparecem
@@ -30,6 +30,24 @@ function deKml(t) {
     const linhas = todos(pm, /<LineString[\s>][\s\S]*?<coordinates>([\s\S]*?)<\/coordinates>/g).map(coordsKml);
     return [areas.length && { nome, tipo: 'area', partes: areas }, linhas.length && { nome, tipo: 'linha', partes: linhas }].filter(Boolean);
   });
+}
+
+// KMZ é um zip com o KML dentro. Lê o diretório central e descompacta o primeiro .kml (deflate ou sem compressão).
+async function textoCamada(buf) {
+  const u = new Uint8Array(buf), dv = new DataView(buf);
+  if (u[0] !== 0x50 || u[1] !== 0x4b) return new TextDecoder().decode(u);
+  let fim = u.length - 22; while (fim >= 0 && dv.getUint32(fim, true) !== 0x06054b50) fim--;
+  if (fim < 0) throw new Error('KMZ corrompido.');
+  for (let p = dv.getUint32(fim + 16, true), n = dv.getUint16(fim + 10, true); n--; ) {
+    const metodo = dv.getUint16(p + 10, true), tam = dv.getUint32(p + 20, true), ln = dv.getUint16(p + 28, true);
+    const nome = new TextDecoder().decode(u.subarray(p + 46, p + 46 + ln)), loc = dv.getUint32(p + 42, true);
+    p += 46 + ln + dv.getUint16(p + 30, true) + dv.getUint16(p + 32, true);
+    if (!/\.kml$/i.test(nome)) continue;
+    const ini = loc + 30 + dv.getUint16(loc + 26, true) + dv.getUint16(loc + 28, true), dados = u.subarray(ini, ini + tam);
+    if (metodo === 0) return new TextDecoder().decode(dados);
+    return new Response(new Blob([dados]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+  }
+  throw new Error('O KMZ não tem arquivo KML.');
 }
 
 function lerCamada(texto, arquivo) {
@@ -63,11 +81,11 @@ function consultar(camadas, gps) {
   if (!gps) return [];
   const p = [gps.lat, gps.lon], out = [];
   for (const c of camadas) for (const f of c.feicoes) {
-    if (f.tipo === 'area' && dentro(p, f.partes)) out.push({ camada: c.nome, feicao: f.nome, dentro: true });
+    if (f.tipo === 'area' && dentro(p, f.partes)) out.push({ camada: c.nome, feicao: f.nome, dentro: true, ...(c.uc && { uc: c.uc }) });
     if (f.tipo === 'linha') { const d = distLinha(p, f.partes); if (d <= LIMITE_M) out.push({ camada: c.nome, feicao: f.nome, distM: Math.round(d) }); }
   }
   return out;
 }
 
-globalThis.Camadas = { lerCamada, consultar };
+globalThis.Camadas = { lerCamada, textoCamada, consultar };
 })();

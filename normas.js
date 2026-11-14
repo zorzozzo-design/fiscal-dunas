@@ -143,7 +143,25 @@ function checar(ab, ctx = {}) {
   if (emUc) {
     add('D07', comDano ? 'vermelho' : 'amarelo', `Tráfego de veículo dentro de Unidade de Conservação ${c.uc}${ab.lugar.ucNome ? ` (${ab.lugar.ucNome})` : ''}${comDano ? ', com dano' : ''}.`,
       `${DEC}, arts. 106 e 108`, `Infração: ${DEC}, art. 106 (25 a 500 UPF)`, comDano ? 'L9605-40' : '', 'Em UC, as multas dobram.');
-    if (c.uc === 'federal') aviso('D07', 'amarelo', 'A UC é federal. O caso é da Justiça Federal e do ICMBio. Comunique o ICMBio.', 'CF/88, art. 109, IV');
+    if (c.uc === 'federal') {
+      aviso('D07', 'amarelo', 'A UC é federal. O caso é da Justiça Federal e do ICMBio. Comunique o ICMBio.', 'CF/88, art. 109, IV');
+      aviso('D07', 'info', 'O ICMBio enquadra no Dec. 6.514/2008, art. 90, a conduta contra o plano de manejo (R$ 500 a R$ 10.000). Com dano, art. 91 (R$ 200 a R$ 100.000).', 'Dec. 6.514/2008, arts. 90 e 91');
+    }
+    // Orientação do ICMBio ao 4º Pel (nov/2026).
+    if (semAcentoN(ab.lugar.ucNome).includes('lagoa do peixe')) {
+      aviso('D07', 'info', 'No PARNA da Lagoa do Peixe, o veículo só anda nas estradas permitidas e na faixa de praia ao norte da barra. Duna é proibida para 4x4, quadriciclo e moto.', 'Plano de Manejo do PARNA da Lagoa do Peixe; orientação do ICMBio');
+      aviso('D07', 'info', 'O Plano de Manejo cita a trilha do Talha-mar e a trilha das Dunas, com limite de 40 km/h. Sem radar, a prova da velocidade é fraca.', 'Plano de Manejo do PARNA da Lagoa do Peixe, Encarte 6');
+      aviso('D07', 'info', 'O ICMBio orienta o turista de boa-fé sem dano. Na reincidência, multa. Pescador do Termo de Compromisso pode levar o pescado pelas duas trilhas.', 'Orientação do ICMBio; Termo de Compromisso, cláusula 15ª');
+    }
+  }
+  // Zona de amortecimento só existe com ato que a cria (plano de manejo ou ato próprio).
+  if (ab.lugar?.amortecimento)
+    aviso('D07', 'amarelo', 'Confira o ato que criou a zona de amortecimento. O CNUC não registra zona de amortecimento do PARNA da Lagoa do Peixe. O ICMBio mapeia só uma Zona de Transição, de 1999. Na dúvida, use a APP do local e consulte o ICMBio.', 'Lei 9.985/2000, art. 25; CNUC');
+  // D29: trilha antiga ou área consolidada.
+  if (ab.lugar?.consolidada) {
+    aviso('D29', 'amarelo', 'Trilha antiga não vira trilha legal. No direito ambiental não há fato consumado (STJ, Súmula 613). Se o tráfego impede a regeneração, veja a D21.', 'STJ, Súmula 613');
+    aviso('D29', 'info', 'Em passeio comercial, a defesa pode alegar ecoturismo em área rural consolidada (Lei 12.651, art. 61-A). A tese exige uso antes de 22/07/2008 e CAR.', 'Lei 12.651/2012, arts. 3º, IV, e 61-A');
+    aviso('D29', 'info', 'A lei só fixa a recomposição de margem de rio, lagoa, nascente e vereda. Para duna e restinga fixadora, a tese é fraca, mas o tema é controverso.', 'Lei 12.651/2012, arts. 61-A e 63');
   }
   // D08: bem da União.
   if (c.marinha) aviso('D08', 'amarelo', 'O local pode ser terreno de marinha ou lagoa ligada ao mar. Então o caso pode ser federal. Comunique a PF ou o MPF, além da DP.', 'STJ, RHC 50.692/SC; AREsp 2.313.729/SP');

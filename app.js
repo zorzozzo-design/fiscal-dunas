@@ -2,7 +2,7 @@ const { FEICOES, areasDoPonto, checar, rito, crimesDe, agravantes, basesApreensa
 const { NOTIF_ABERTURA, DESTINOS, descVeiculo, motivoSugerido, notificacao, termoApreensao, autoConstatacao, historicoBO, pendenciasDe, lembreteBackup, relatorioFotografico, fotoInfo,
   notificacaoTermica, termoTermico, autoTermico, numerar, resumoPeriodo, csvAbordagens } = window.Docs;
 const { lerExif } = window.Fotos;
-const { lerCamada, consultar } = window.Camadas;
+const { lerCamada, textoCamada, consultar } = window.Camadas;
 
 // ---------- utilitários ----------
 const $ = s => document.querySelector(s);
@@ -405,6 +405,7 @@ function telaAbordagem(rota) {
       <div class="grade">${sel('lugar.uc', 'Unidade de Conservação', UCS, { '': 'Não', federal: 'Federal', estadual: 'Estadual', municipal: 'Municipal' })}
         <div data-se="lugar.uc">${txt('lugar.ucNome', 'Nome da UC')}</div></div>
       ${chk('lugar.amortecimento', 'Zona de amortecimento de UC')}
+      ${chk('lugar.consolidada', 'Trilha antiga ou área consolidada (uso antes de 2008)')}
       ${chk('lugar.marinha', 'Até 33 m da preamar de 1831 (terreno de marinha) ou lagoa ligada ao mar')}
       ${chk('lugar.privada', 'Área privada (a proteção ambiental continua)')}</details>
 
@@ -540,6 +541,9 @@ function telaAbordagem(rota) {
     $('#gps').textContent = 'Obtendo posição…';
     navigator.geolocation.getCurrentPosition(p => {
       A.gps = { lat: p.coords.latitude, lon: p.coords.longitude, precisaoM: Math.round(p.coords.accuracy) };
+      // Dentro de camada marcada como UC: preenche a UC, se o agente ainda não marcou.
+      const uc = consultar(camadas, A.gps).find(r => r.dentro && r.uc);
+      if (uc && !A.lugar.uc) { A.lugar.uc = uc.uc; A.lugar.ucNome ||= uc.feicao; preencher(); }
       alterado = true; verGps(); desenhar();
     }, () => { $('#gps').textContent = 'Não foi possível obter o GPS.'; }, { enableHighAccuracy: true, timeout: 20000 });
   };
@@ -687,9 +691,10 @@ function telaDados() {
       <div class="chips">${MUNICIPIOS.map(m => `<label class="chk chip-chk"><input type="checkbox" data-conv="${esc(m)}"${conv.has(m) ? ' checked' : ''}> ${esc(m)}</label>`).join('')}</div>
       <label for="c-outros">Outros municípios sem convênio (separe por vírgula)</label><input id="c-outros" value="${esc([...conv].filter(m => !MUNICIPIOS.includes(m)).join(', '))}">
       <p><button id="b-conv" type="button">Salvar convênios</button></p></details>
-    <details class="card card-dobra"><summary><h2>Camadas do mapa</h2></summary><p class="muted peq">Importe arquivos KML ou GeoJSON: UC, campo de dunas, linha de preamar ou margem de lagoa. No GPS da abordagem, o app mostra a área do ponto e a distância das linhas até 2 km. Converta shapefile ou KMZ para KML antes, no Google Earth ou no QGIS. As camadas ficam só neste aparelho. O backup não leva as camadas.</p>
+    <details class="card card-dobra"><summary><h2>Camadas do mapa</h2></summary><p class="muted peq">Importe arquivos KML, KMZ ou GeoJSON: UC, campo de dunas, linha de preamar ou margem de lagoa. No GPS da abordagem, o app mostra a área do ponto e a distância das linhas até 2 km. Converta shapefile para KML antes, no Google Earth ou no QGIS. Na camada de UC, o GPS dentro da área preenche a UC da abordagem. As camadas ficam só neste aparelho. O backup não leva as camadas.</p>
       <ul id="l-cam" class="peq"></ul>
-      <label class="btn sec" for="f-cam-imp">Importar camada</label><input id="f-cam-imp" type="file" accept=".kml,.geojson,.json,application/vnd.google-earth.kml+xml,application/geo+json,application/json" multiple hidden>
+      <label for="f-cam-uc">A camada a importar é de UC?</label><select id="f-cam-uc"><option value="">Não</option><option value="federal">UC federal</option><option value="estadual">UC estadual</option><option value="municipal">UC municipal</option></select>
+      <label class="btn sec" for="f-cam-imp">Importar camada</label><input id="f-cam-imp" type="file" accept=".kml,.kmz,.geojson,.json,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,application/geo+json,application/json" multiple hidden>
       <p id="m-cam" class="msg peq"></p></details>
     <details class="card card-dobra"><summary><h2>Backup</h2></summary><p class="muted peq">Os dados existem só neste aparelho. O backup sai criptografado com a sua senha.${db.cfg.ultimoBackup ? ` Último: ${fmtData(db.cfg.ultimoBackup)}.` : ''}</p>
       <div class="linha"><button class="sec" id="b-exp" type="button">Baixar backup</button><button class="sec" id="b-nuvem" type="button">Enviar para a nuvem</button>
@@ -716,14 +721,15 @@ function telaDados() {
     await salvarCom('Convênios salvos.');
   };
   const verCamadas = () => {
-    $('#l-cam').innerHTML = camadas.map((c, i) => `<li>${esc(c.nome)} <span class="muted">(${c.feicoes.length} feiç${c.feicoes.length > 1 ? 'ões' : 'ão'})</span>
+    $('#l-cam').innerHTML = camadas.map((c, i) => `<li>${esc(c.nome)} <span class="muted">(${c.uc ? `UC ${c.uc}, ` : ''}${c.feicoes.length} feiç${c.feicoes.length > 1 ? 'ões' : 'ão'})</span>
       <button type="button" class="sec" data-rmcam="${i}">Remover</button></li>`).join('') || '<li class="muted">Nenhuma camada.</li>';
   };
   const gravarCamadas = () => tx('kv', 'readwrite', s => s.put(camadas, 'camadas'));
   $('#f-cam-imp').onchange = async e => {
     const fs = [...e.target.files]; e.target.value = '';
     const erros = [];
-    for (const f of fs) try { camadas.push(lerCamada(await f.text(), f.name)); } catch (err) { erros.push(`${f.name}: ${err.message}`); }
+    const uc = $('#f-cam-uc').value;
+    for (const f of fs) try { camadas.push({ ...lerCamada(await textoCamada(await f.arrayBuffer()), f.name), ...(uc && { uc }) }); } catch (err) { erros.push(`${f.name}: ${err.message}`); }
     await gravarCamadas(); verCamadas();
     msg('#m-cam', erros.length ? erros.join(' ') : 'Camada importada.', !!erros.length);
   };

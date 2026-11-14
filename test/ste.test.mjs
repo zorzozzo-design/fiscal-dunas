@@ -15,7 +15,7 @@ const longas = textos => textos.flatMap(t => frases(t)).filter(f => palavras(f) 
 const base = { data: '2026-11-08T19:00', veiculo: { tipo: 'Quadriciclo', semPlaca: true }, proprietario: { entregouDirecao: true },
   condutor: { cnhSit: 'Sem CNH', nascimento: '2010-01-01' }, apreensao: { base: 'penal', valor: 0, fiel: { autuado: true } } };
 const cenarios = [
-  { ...base, lugar: { via: false, feicoes: ['Duna frontal', 'Restinga'], distPreamarM: 100, distMetodo: 'Estimativa', uc: 'federal', marinha: true },
+  { ...base, lugar: { via: false, feicoes: ['Duna frontal', 'Restinga'], distPreamarM: 100, distMetodo: 'Estimativa', uc: 'federal', ucNome: 'Parque Nacional da Lagoa do Peixe', amortecimento: true, consolidada: true, marinha: true },
     dano: { vegetacao: 'Arbórea', estagio: 'Médio', sulcos: true, reiterada: true, tocaNinho: true, areia: true }, condutas: { fuga: true, evento: true, embriaguez: true } },
   { ...base, lugar: { via: true, feicoes: ['Restinga'], distPreamarM: 200, fixadora: true }, dano: { vegetacao: 'Herbácea' },
     condutor: { cnhSit: 'Sem CNH', nascimento: '1990-01-01' }, condutas: { perigoDano: true, manobra: true, racha: true, velocidadePessoas: true, semCapacete: true } },

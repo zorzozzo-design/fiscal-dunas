@@ -48,3 +48,22 @@ test('arquivo sem feições ou inválido: erro claro', () => {
   assert.throws(() => lerCamada('{"type":"FeatureCollection","features":[]}', 'a.geojson'), /Nenhuma área ou linha/);
   assert.throws(() => lerCamada('isto não é camada', 'a.txt'), /KML ou GeoJSON/);
 });
+
+test('camada marcada como UC devolve o tipo da UC nas áreas', () => {
+  const c = { ...lerCamada(geo, 'ucs.geojson'), uc: 'federal' };
+  assert.equal(consultar([c], { lat: -30.199, lon: -50.199 }).find(r => r.dentro).uc, 'federal');
+  assert.equal(consultar([c], { lat: -30.101, lon: -50.2 }).find(r => r.feicao === 'Preamar').uc, undefined, 'linha não é UC');
+  assert.equal(consultar([lerCamada(geo, 'x.geojson')], { lat: -30.199, lon: -50.199 }).find(r => r.dentro).uc, undefined);
+});
+
+test('KMZ do ICMBio: limite do PARNA da Lagoa do Peixe', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { textoCamada } = globalThis.Camadas;
+  const buf = readFileSync(new URL('./fixtures/parna-lagoa-do-peixe.kmz', import.meta.url));
+  const c = { ...lerCamada(await textoCamada(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.length)), 'parna.kmz'), uc: 'federal' };
+  const r = consultar([c], { lat: -31.35, lon: -51.03 }).find(x => x.dentro);
+  assert.equal(r.feicao, 'PARQUE NACIONAL DA LAGOA DO PEIXE');
+  assert.equal(r.uc, 'federal');
+  assert.equal(consultar([c], { lat: -31.107, lon: -50.917 }).length, 0, 'Mostardas fica fora');
+  assert.equal(await textoCamada(new TextEncoder().encode('{"type":"x"}').buffer), '{"type":"x"}', 'texto puro passa direto');
+});

@@ -80,7 +80,7 @@ test('D06: faixa da lagoa 100 m rural, 50 m até 20 ha, 30 m urbana', () => {
 
 test('D07: UC dobra as multas; UC federal avisa competência', () => {
   const ms = de(ab({ lugar: { uc: 'federal', fixadora: true }, dano: { vegetacao: 'Herbácea' } }), 'D07');
-  assert.equal(ms.length, 2);
+  assert.equal(ms.length, 3, "dano, competência e enquadramento do ICMBio");
   assert.equal(ms[0].crime, 'L9605-40');
   assert.match(de(ab({ lugar: { uc: 'estadual', fixadora: true }, dano: { vegetacao: 'Herbácea' } }), 'D05')[0].enquadramento, /em dobro/);
 });
@@ -246,4 +246,31 @@ test('D28: Cidreira libera dois trechos da orla (Lei 628/1997, art. 4º)', () =>
 test('D02: sem convênio também na faixa de areia e na duna (AIT da Orientação 002/2025)', () => {
   assert.ok(tem(ab({ lugar: { feicoes: ['Faixa de praia'] } }), 'D02'));
   assert.ok(!tem(ab({ lugar: { feicoes: ['Faixa de praia'] } }), 'D02', { convenio: true }));
+});
+
+// Orientação do ICMBio (PARNA da Lagoa do Peixe, nov/2026).
+test('D07: UC federal traz o enquadramento do ICMBio (Dec. 6.514, arts. 90 e 91)', () => {
+  const t = de(ab({ lugar: { uc: 'federal' } }), 'D07').map(m => m.texto).join(' ');
+  assert.match(t, /Dec\. 6\.514\/2008, art\. 90/);
+  assert.match(t, /art\. 91/);
+  assert.ok(!de(ab({ lugar: { uc: 'estadual' } }), 'D07').some(m => /6\.514/.test(m.texto)));
+});
+test('D07: PARNA da Lagoa do Peixe tem as regras de trânsito do Parque', () => {
+  const ms = de(ab({ lugar: { uc: 'federal', ucNome: 'PARNA da Lagoa do Peixe' } }), 'D07');
+  assert.ok(ms.some(m => m.interno && /faixa de praia ao norte da barra/.test(m.texto)));
+  assert.ok(ms.some(m => m.interno && /boa-fé/.test(m.texto)));
+  assert.ok(ms.some(m => m.interno && /40 km\/h/.test(m.texto)));
+  assert.ok(!de(ab({ lugar: { uc: 'federal', ucNome: 'REBIO X' } }), 'D07').some(m => /barra/.test(m.texto)));
+});
+test('zona de amortecimento: confira o ato que a criou', () => {
+  const ms = de(ab({ lugar: { amortecimento: true } }), 'D07');
+  assert.ok(ms.some(m => m.interno && /Lagoa do Peixe/.test(m.texto) && /Zona de Transição/.test(m.texto)));
+  assert.ok(!tem(ab(), 'D07'));
+});
+test('D29: trilha antiga ou área consolidada não legaliza o tráfego', () => {
+  const ms = de(ab({ lugar: { consolidada: true } }), 'D29');
+  assert.ok(ms.length && ms.every(m => m.interno));
+  assert.match(ms.map(m => m.texto).join(' '), /Súmula 613/);
+  assert.match(ms.map(m => m.texto).join(' '), /art\. 61-A/);
+  assert.ok(!tem(ab(), 'D29'));
 });
