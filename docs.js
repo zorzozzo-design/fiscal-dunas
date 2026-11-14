@@ -116,7 +116,7 @@ function autoConstatacao(ab, cfg, r) {
     <p class="doc-texto">${esc(ab.fatos || historicoBO(ab, r)).replace(/\n/g, '<br>')}</p>
     ${nFotos(ab) ? `<p class="doc-texto">Anexo: relatório fotográfico com ${plural(nFotos(ab))}.</p>` : ''}
     ${ab.lugar?.distPreamarM != null ? `<p class="doc-texto">Distância da linha de preamar máxima: ${esc(num(ab.lugar.distPreamarM))} m${ab.lugar.distMetodo ? ` (medição: ${esc(ab.lugar.distMetodo.toLowerCase())})` : ''}.</p>` : ''}
-    ${d.areaM2 ? `<p class="doc-texto">Área atingida: ${esc(num(d.areaM2))} m². Vegetação: ${esc(d.vegetacao)}${d.estagio ? `, estágio ${esc(d.estagio.toLowerCase())}` : ''}.</p>` : ''}
+    ${d.areaM2 ? `<p class="doc-texto">Área atingida: ${esc(num(d.areaM2))} m². Vegetação: ${esc(d.vegetacao || 'não informada')}${d.estagio ? `, estágio ${esc(d.estagio.toLowerCase())}` : ''}.</p>` : ''}
     <div class="doc-faixa">CIRCUNSTÂNCIAS AGRAVANTES E ATENUANTES (Dec. RS 55.374/2020, art. 6º)</div>
     <p class="doc-texto">Agravantes: ${esc(r.agravantes.join('; ') || 'nenhuma identificada')}.<br>Atenuantes: ${esc(ab.atenuantes || 'nenhuma informada')}.</p>
     <div class="doc-faixa">ENQUADRAMENTO SUGERIDO (não vincula a autoridade julgadora)</div>
@@ -191,7 +191,7 @@ function autoTermico(ab, cfg, r) {
     T.sec('DESCRIÇÃO DOS FATOS'), T.campo('Fatos', ab.fatos || historicoBO(ab, r)),
     nFotos(ab) ? T.campo('Anexo', `Relatório fotográfico com ${plural(nFotos(ab))}.`) : '',
     l.distPreamarM != null ? T.campo('Distância da linha de preamar máxima', `${num(l.distPreamarM)} m${l.distMetodo ? ` (medição: ${l.distMetodo.toLowerCase()})` : ''}`) : '',
-    d.areaM2 ? T.campo('Área atingida', `${num(d.areaM2)} m². Vegetação: ${d.vegetacao}${d.estagio ? `, estágio ${d.estagio.toLowerCase()}` : ''}.`) : '',
+    d.areaM2 ? T.campo('Área atingida', `${num(d.areaM2)} m². Vegetação: ${d.vegetacao || 'não informada'}${d.estagio ? `, estágio ${d.estagio.toLowerCase()}` : ''}.`) : '',
     T.sec('AGRAVANTES E ATENUANTES (Dec. RS 55.374/2020, art. 6º)'),
     T.campo('Agravantes', r.agravantes.join('; ') || 'Nenhuma identificada.'), T.campo('Atenuantes', ab.atenuantes || 'Nenhuma informada.'),
     T.sec('ENQUADRAMENTO SUGERIDO (não vincula a autoridade julgadora)'), T.campo('Enquadramento', enq.join('; ') || 'A definir pela autoridade competente.'),

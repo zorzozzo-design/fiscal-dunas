@@ -31,7 +31,7 @@ const MUNICIPIOS = ['Torres', 'Arroio do Sal', 'Capão da Canoa', 'Xangri-lá', 
 const TIPOS_VEICULO = ['4x4 ou caminhonete', 'Carro', 'Moto de trilha', 'Moto', 'Quadriciclo', 'UTV ou ATV', 'Caminhão', 'Máquina', 'Outro'];
 const REGISTROS = ['Não verificado', 'Regular', 'Sem registro', 'Não licenciado'];
 const CNH_SIT = ['Não verificada', 'Regular', 'Sem CNH', 'Suspensa', 'Cassada'];
-const VEGETACAO = ['Nenhuma', 'Herbácea', 'Arbustiva', 'Arbórea'];
+const VEGETACAO = ['', 'Nenhuma', 'Herbácea', 'Arbustiva', 'Arbórea'];
 const ESTAGIOS = ['', 'Inicial', 'Médio', 'Avançado'];
 const UCS = ['', 'federal', 'estadual', 'municipal'];
 const PROVIDENCIAS = ['Orientação', 'Notificação', 'BA', 'BO/TC', 'BO/COP', 'Condução à DP', 'Auto de Constatação', 'Apreensão', 'Remoção (trânsito)', 'Retenção (trânsito)'];
@@ -339,7 +339,7 @@ function novaAbordagem() {
     lugar: { via: false, feicoes: [], fixadora: false, distPreamarM: null, lagoa: { distM: null, zona: 'rural', ate20ha: false }, uc: '', ucNome: '', amortecimento: false, marinha: false, privada: false },
     veiculo: { tipo: TIPOS_VEICULO[0], placa: '', chassi: '', marca: '', modelo: '', cor: '', ano: '', registro: 'Não verificado', semPlaca: false, alterado: false, posseIlicita: false },
     condutor: { cnhSit: 'Não verificada', cnhCat: '' }, proprietario: { mesmo: true, entregouDirecao: false },
-    dano: { vegetacao: 'Nenhuma', estagio: '', areaM2: null }, condutas: {}, reincidencia: '',
+    dano: { vegetacao: '', estagio: '', areaM2: null }, condutas: {}, reincidencia: '',
     providencias: [], apreensao: null, notificacao: null, fatos: '', atenuantes: '', obs: '', recusaAssinatura: false, resolvidas: [], fotos: [] };
 }
 

@@ -284,7 +284,7 @@ test('D30: campo de dunas, banhado e fixadora sem dano marcado dão amarelo', ()
   assert.equal(d30[0].nivel, 'amarelo');
   assert.ok(!d30[0].interno, 'é fato: vai para o histórico');
   assert.match(d30[0].texto, /campo de dunas móveis/);
-  assert.match(d30[0].dica, /vegetação atingida/, 'fixadora marcada sem vegetação: avisa a contradição');
+  assert.match(d30[0].dica, /vegetação atingida/, 'fixadora marcada sem vegetação: pede para conferir');
   for (const f of ['Campo de dunas móveis', 'Banhado', 'Restinga', 'Capão de mata em margem de lagoa'])
     assert.ok(tem(ab({ lugar: { feicoes: [f] } }), 'D30'), f);
   assert.ok(tem(ab({ lugar: { fixadora: true } }), 'D30'));
@@ -296,4 +296,9 @@ test('D30: some quando outra regra ambiental já acende, e não acende fora de a
   assert.ok(!tem(ab({ lugar: { feicoes: ['Banhado'] }, dano: { sulcos: true } }), 'D30'), 'sulcos já dão D03');
   assert.ok(!tem(ab(), 'D30'));
   assert.ok(!tem(ab({ lugar: { feicoes: ['Faixa de praia'] } }), 'D30'), 'praia tem a D28');
+});
+test('D30: vegetação não informada pede para informar; "Nenhuma" escolhida aponta a contradição', () => {
+  const dica = veg => de(ab({ lugar: { feicoes: ['Banhado'], fixadora: true }, dano: { vegetacao: veg } }), 'D30')[0].dica;
+  assert.match(dica(''), /Informe a vegetação atingida no bloco 4/);
+  assert.match(dica('Nenhuma'), /marcou Nenhuma/);
 });

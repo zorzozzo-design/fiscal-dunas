@@ -146,7 +146,8 @@ function checar(ab, ctx = {}) {
     add('D30', 'amarelo', `Veículo em ambiente protegido (${ambientes.join('; ')}), sem dano constatado até o momento.`,
       [...new Set([c.zonaCosteira && 'Lei 15.434/2020, art. 208', (ab.lugar?.feicoes || []).includes('Restinga') && 'Lei 11.428/2006', ...c.app.map(a => a[2])].filter(Boolean))].join('; '), '', '',
       'Verifique dano à vegetação, sulcos, rastros e fauna. Com dano, marque no bloco Dano. Sem dano, oriente e registre a orientação.'
-      + (ab.lugar?.fixadora && !comDano ? ' A vegetação fixadora está marcada, mas a vegetação atingida está como Nenhuma. Confira.' : ''));
+      + (ab.lugar?.fixadora && !comDano ? (d.vegetacao === 'Nenhuma' ? ' A vegetação fixadora está marcada, mas a vegetação atingida marcou Nenhuma. Confira.'
+        : ' A vegetação fixadora está marcada. Informe a vegetação atingida no bloco 4.') : ''));
 
   // D07: Unidade de Conservação.
   if (emUc) {
